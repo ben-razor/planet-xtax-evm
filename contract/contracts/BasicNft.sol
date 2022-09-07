@@ -34,12 +34,17 @@ contract BasicNft is ERC721, Ownable {
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
         string calldata position,
-        string calldata signature
-    ) public view returns(bytes32) {
+        bytes memory signature
+    ) public view returns(address) {
         bytes memory msg1 = abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position);
-        console.log(string(msg1));
-        bytes32 msgHash = sha256(msg1);
-        return msgHash;
+
+        bytes32 msgHash = keccak256("a:b:c");
+        bytes32 msgFull = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgHash));
+        address signer = this.recover(msgFull, signature);
+
+        console.logBytes(signature);
+
+        return signer;
     }
 
     function recover(bytes32 hash, bytes memory signature) public pure returns(address) {

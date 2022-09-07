@@ -53,8 +53,10 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
     describe("Planet", () => {
         it("mints planets", async function () {
-            let msg = await basicNft.mintPlanet("a", "b", "c", "s")
-            assert.equal(msg.toString('hex').slice(2), 'b0ee04f880c4ff4261479e2e7822b7410aee4c7159f4185ad5b0d88a312b495e')
+            const s = Buffer.from('897e5e9732a97ab5d4d0467197a2b8e22e5c0e516bdd77bfc8fb8a79f331453a374bf032807d25859a0f191292f42a25d2ff3523fa0f2b7d75249d198f05d8761c', 'hex')
+            const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
+            let ar = await basicNft.mintPlanet("a", "b", "c", s)
+            assert.equal(ar, a)
         })
     });
 });
