@@ -87,9 +87,9 @@ contract BasicNft is ERC721, Ownable {
             if(tokenIdToInfo[positionToTokenId[positionStr]].owner != msg.sender) {
                 revert NotOwnerOfPosition();
             }
-        }
-        else {
-            senderOwnsPosition = true;
+            else {
+                senderOwnsPosition = true;
+            }
         }
 
         bool senderOwnsStructure = false;
@@ -100,26 +100,29 @@ contract BasicNft is ERC721, Ownable {
             if(tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]].owner != msg.sender) {
                 revert NotOwnerOfPlanetStructure();
             }
-        }
-        else {
-            senderOwnsStructure = true;
+            else {
+                senderOwnsStructure = true;
+            }
         }
 
         if(senderOwnsStructure) {
-            PlanetInfo memory info = tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]];
+            uint256 tokenId = planetStructureCIDToTokenId[planetStructureCID];
+            PlanetInfo memory info = tokenIdToInfo[tokenId];
             removePlanetFromPosition(msg.sender, 
                 info.position,
                 planetStructureCID,
-                info.planetMetadataCID
+                info.planetMetadataCID,
+                tokenId
             );
-            tokenIdToBurn = planetStructureCIDToTokenId[planetStructureCID];
         }
         else if(senderOwnsPosition) {
-            PlanetInfo memory info = tokenIdToInfo[positionToTokenId[positionStr]];
+            uint256 tokenId = positionToTokenId[positionStr];
+            PlanetInfo memory info = tokenIdToInfo[tokenId];
             removePlanetFromPosition(msg.sender, 
                 positionStr, 
                 info.planetStructureCID,
-                info.planetMetadataCID
+                info.planetMetadataCID,
+                tokenId
             );
             tokenIdToBurn = positionToTokenId[positionStr];
         }
@@ -129,13 +132,13 @@ contract BasicNft is ERC721, Ownable {
         emit MintedPlanet(msg.sender);
     }
 
-    function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
-        delete positionToPlanetMetadataCID[position];
-        delete positionToPlanetStructureCID[position];
-        delete positionToOwner[position];
-        delete planetStructureCIDToPosition[planetStructureCID];
-        delete planetStructureCIDToOwner[planetStructureCID];
-        delete planetMetadataCIDToOwner[planetMetadataCID];
+    function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
+        _burn(tokenId);
+
+        delete tokenIdToInfo[tokenId];
+        delete positionToTokenId[position];
+        delete planetStructureCIDToTokenId[planetStructureCID];
+        delete planetMetadataCIDToTokenId[planetMetadataCID];
     }
 
     function addPlanetToPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
