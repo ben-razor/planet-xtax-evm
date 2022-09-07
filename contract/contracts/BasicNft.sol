@@ -27,7 +27,10 @@ contract BasicNft is ERC721, Ownable {
 
     mapping(address => bool) signers;
     mapping(string => address) positionToOwner;
-    mapping(string => address) planetStructureCidToOwner;
+    mapping(string => address) planetStructureCIDToOwner;
+    mapping(string => string) planetStructureCIDToPosition;
+    mapping(string => string) positionToPlanetMetadataCID;
+    mapping(string => string) positionToPlanetStructureCID;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
         s_tokenCounter = 0;
@@ -62,34 +65,60 @@ contract BasicNft is ERC721, Ownable {
 
         string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));
 
-        bool verified = verify(planetMetadataCID, planetStructureCID, positionStr, signature);
-
-        if(!verified) {
+        if(!verify(planetMetadataCID, planetStructureCID, positionStr, signature)) {
             revert VerifyFailed();
         }
 
-        address ownerOfPosition = positionToOwner[positionStr];
-        bool positionIsFree = ownerOfPosition == address(0);
-        bool otherOwner = ownerOfPosition != msg.sender;
+        string memory tokenIdToBurn = "";
+        bool senderOwnsPosition = false;
 
-        if(!positionIsFree) {
-            if(otherOwner) {
+        // If position already has planet
+        if(positionToOwner[positionStr] != address(0)) {
+            // If it is owned by a different XtaXian
+            if(positionToOwner[positionStr] != msg.sender) {
                 revert NotOwnerOfPosition();
             }
         }
+        else {
+            senderOwnsPosition = true;
+        }
 
-        address ownerOfPlanetStructure = planetStructureCIDToOwner[positionStr];
-        bool structureIsFree = ownerOfPlanetStructure == address(0);
-        bool otherOwnerOfStructure = ownerOfStructure != msg.sender;
+        bool senderOwnsStructure = false;
 
-        if(!structureIsFree) {
-            if(otherOwnerOfStructure) {
+        // If structure is already owned
+        if(planetStructureCIDToOwner[positionStr] != address(0)) {
+            // If it is owned by a different XtaXian
+            if(planetStructureCIDToOwner[positionStr] != msg.sender) {
                 revert NotOwnerOfPlanetStructure();
             }
+        }
+        else {
+            senderOwnsStructure = true;
+        }
+
+        if(senderOwnsStructure) {
+            string memory oldPosition = planetStructureCIDToPosition[planetStructureCID];
+            string memory oldPlanetMetadataCID = positionToPlanetMetadataCID[oldPosition];
+            removePlanetFromPosition(msg.sender, 
+                oldPosition, 
+                planetStructureCID, 
+                oldPlanetMetadataCID
+            );
+            tokenIdToBurn = oldPlanetMetadataCID;
+        }
+        else if(senderOwnsPosition) {
+            string memory oldPlanetStructureCID = positionToPlanetStructureCID[positionStr];
+            string memory oldPlanetMetadataCID = positionToPlanetMetadataCID[positionStr];
+            removePlanetFromPosition(msg.sender, positionStr, oldPlanetStructureCID, oldPlanetMetadataCID);
+            tokenIdToBurn = oldPlanetMetadataCID;
         }
 
 
         emit MintedPlanet(msg.sender);
+    }
+
+    function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
+
     }
 
     function addSigner(address signer) public onlyOwner {
