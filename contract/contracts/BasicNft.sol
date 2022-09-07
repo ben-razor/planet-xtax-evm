@@ -26,19 +26,29 @@ contract BasicNft is ERC721, Ownable {
     uint256 private s_tokenCounter;
 
     mapping(address => bool) signers;
+
+    struct PlanetInfo {
+        address owner;
+        string position;
+        string planetStructureCID;
+        string planetMetadataCID;
+    }
+
+    mapping(string => uint256) positionToTokenId;
+    mapping(string => uint256) planetMetadataCIDToTokenId;
+    mapping(string => uint256) planetStructureCIDToTokenId;
+
+    mapping(uint256 => PlanetInfo) tokenIdToInfo;
+
     mapping(string => address) positionToOwner;
     mapping(string => address) planetStructureCIDToOwner;
+    mapping(string => address) planetMetadataCIDToOwner;
     mapping(string => string) planetStructureCIDToPosition;
     mapping(string => string) positionToPlanetMetadataCID;
     mapping(string => string) positionToPlanetStructureCID;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
         s_tokenCounter = 0;
-    }
-
-    function mintNft() public onlyOwner {
-        s_tokenCounter = s_tokenCounter + 1;
-        _safeMint(msg.sender, s_tokenCounter);
     }
 
     function tokenURI(uint256 tokenId) public pure override returns (string memory) {
@@ -57,9 +67,8 @@ contract BasicNft is ERC721, Ownable {
         bytes memory signature
     ) public returns(address) {
 
-        bool isCorrectLevel = keccak256(abi.encodePacked(position[1])) == keccak256(abi.encodePacked(LEVEL));
-
-        if(!isCorrectLevel) {
+        // If trying to mint on wrong level (vertical height not available on this blockchain)
+        if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
             revert IncorrectLevel(position[1], LEVEL);
         }
 
@@ -69,13 +78,13 @@ contract BasicNft is ERC721, Ownable {
             revert VerifyFailed();
         }
 
-        string memory tokenIdToBurn = "";
+        uint256 tokenIdToBurn = 0;
         bool senderOwnsPosition = false;
-
+        
         // If position already has planet
-        if(positionToOwner[positionStr] != address(0)) {
-            // If it is owned by a different XtaXian
-            if(positionToOwner[positionStr] != msg.sender) {
+        if(positionToTokenId[positionStr] != 0) {
+            // If it is owned by a different Xtaxian
+            if(tokenIdToInfo[positionToTokenId[positionStr]].owner != msg.sender) {
                 revert NotOwnerOfPosition();
             }
         }
@@ -86,9 +95,9 @@ contract BasicNft is ERC721, Ownable {
         bool senderOwnsStructure = false;
 
         // If structure is already owned
-        if(planetStructureCIDToOwner[positionStr] != address(0)) {
-            // If it is owned by a different XtaXian
-            if(planetStructureCIDToOwner[positionStr] != msg.sender) {
+        if(planetStructureCIDToTokenId[planetStructureCID] != 0) {
+            // If it is owned by a different Xtaxian
+            if(tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]].owner != msg.sender) {
                 revert NotOwnerOfPlanetStructure();
             }
         }
@@ -97,28 +106,48 @@ contract BasicNft is ERC721, Ownable {
         }
 
         if(senderOwnsStructure) {
-            string memory oldPosition = planetStructureCIDToPosition[planetStructureCID];
-            string memory oldPlanetMetadataCID = positionToPlanetMetadataCID[oldPosition];
+            PlanetInfo memory info = tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]];
             removePlanetFromPosition(msg.sender, 
-                oldPosition, 
-                planetStructureCID, 
-                oldPlanetMetadataCID
+                info.position,
+                planetStructureCID,
+                info.planetMetadataCID
             );
-            tokenIdToBurn = oldPlanetMetadataCID;
+            tokenIdToBurn = planetStructureCIDToTokenId[planetStructureCID];
         }
         else if(senderOwnsPosition) {
-            string memory oldPlanetStructureCID = positionToPlanetStructureCID[positionStr];
-            string memory oldPlanetMetadataCID = positionToPlanetMetadataCID[positionStr];
-            removePlanetFromPosition(msg.sender, positionStr, oldPlanetStructureCID, oldPlanetMetadataCID);
-            tokenIdToBurn = oldPlanetMetadataCID;
+            PlanetInfo memory info = tokenIdToInfo[positionToTokenId[positionStr]];
+            removePlanetFromPosition(msg.sender, 
+                positionStr, 
+                info.planetStructureCID,
+                info.planetMetadataCID
+            );
+            tokenIdToBurn = positionToTokenId[positionStr];
         }
 
+        addPlanetToPosition(msg.sender, positionStr, planetStructureCID, planetMetadataCID);
 
         emit MintedPlanet(msg.sender);
     }
 
     function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
+        delete positionToPlanetMetadataCID[position];
+        delete positionToPlanetStructureCID[position];
+        delete positionToOwner[position];
+        delete planetStructureCIDToPosition[planetStructureCID];
+        delete planetStructureCIDToOwner[planetStructureCID];
+        delete planetMetadataCIDToOwner[planetMetadataCID];
+    }
 
+    function addPlanetToPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
+
+        s_tokenCounter = s_tokenCounter + 1;
+        _safeMint(msg.sender, s_tokenCounter);
+
+        tokenIdToInfo[s_tokenCounter] = PlanetInfo(msg.sender, position, planetStructureCID, planetMetadataCID);
+
+        positionToTokenId[position] = s_tokenCounter;
+        planetStructureCIDToTokenId[planetStructureCID] = s_tokenCounter;
+        planetMetadataCIDToTokenId[planetMetadataCID] = s_tokenCounter;
     }
 
     function addSigner(address signer) public onlyOwner {
