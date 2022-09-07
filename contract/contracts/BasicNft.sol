@@ -9,6 +9,8 @@ import "hardhat/console.sol";
 
 error VerifyFailed();
 error IncorrectLevel(string expected, string actual);
+error NotOwnerOfPosition();
+error NotOwnerOfPlanetStructure();
 
 contract BasicNft is ERC721, Ownable {
     using Strings for string;
@@ -24,6 +26,8 @@ contract BasicNft is ERC721, Ownable {
     uint256 private s_tokenCounter;
 
     mapping(address => bool) signers;
+    mapping(string => address) positionToOwner;
+    mapping(string => address) planetStructureCidToOwner;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
         s_tokenCounter = 0;
@@ -50,6 +54,12 @@ contract BasicNft is ERC721, Ownable {
         bytes memory signature
     ) public returns(address) {
 
+        bool isCorrectLevel = keccak256(abi.encodePacked(position[1])) == keccak256(abi.encodePacked(LEVEL));
+
+        if(!isCorrectLevel) {
+            revert IncorrectLevel(position[1], LEVEL);
+        }
+
         string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));
 
         bool verified = verify(planetMetadataCID, planetStructureCID, positionStr, signature);
@@ -58,12 +68,26 @@ contract BasicNft is ERC721, Ownable {
             revert VerifyFailed();
         }
 
-        string memory y = position[1];
-        bool isCorrectLevel = keccak256(abi.encodePacked(y)) == keccak256(abi.encodePacked(LEVEL));
+        address ownerOfPosition = positionToOwner[positionStr];
+        bool positionIsFree = ownerOfPosition == address(0);
+        bool otherOwner = ownerOfPosition != msg.sender;
 
-        if(!isCorrectLevel) {
-            revert IncorrectLevel(y, LEVEL);
+        if(!positionIsFree) {
+            if(otherOwner) {
+                revert NotOwnerOfPosition();
+            }
         }
+
+        address ownerOfPlanetStructure = planetStructureCIDToOwner[positionStr];
+        bool structureIsFree = ownerOfPlanetStructure == address(0);
+        bool otherOwnerOfStructure = ownerOfStructure != msg.sender;
+
+        if(!structureIsFree) {
+            if(otherOwnerOfStructure) {
+                revert NotOwnerOfPlanetStructure();
+            }
+        }
+
 
         emit MintedPlanet(msg.sender);
     }
