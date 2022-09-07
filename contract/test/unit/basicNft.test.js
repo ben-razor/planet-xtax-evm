@@ -1,6 +1,6 @@
 // We are going to skimp a bit on these tests...
 
-const { assert } = require("chai")
+const { assert, expect } = require("chai")
 const { network, deployments, ethers } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
 
@@ -55,8 +55,17 @@ const { developmentChains } = require("../../helper-hardhat-config")
         it("mints planets", async function () {
             const s = Buffer.from('897e5e9732a97ab5d4d0467197a2b8e22e5c0e516bdd77bfc8fb8a79f331453a374bf032807d25859a0f191292f42a25d2ff3523fa0f2b7d75249d198f05d8761c', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
-            let ar = await basicNft.mintPlanet("a", "b", "c", s)
-            assert.equal(ar, a)
+            
+            await expect(
+                basicNft.mintPlanet("a", "b", "c", s)
+            ).to.be.revertedWith('VerifyFailed()')
+
+            await basicNft.addSigner(a);
+
+            await expect(
+                basicNft.mintPlanet("a", "b", "c", s)
+            ).to.emit(basicNft, 'MintedPlanet')
+            .withArgs(accounts[0].address);
         })
     });
 });

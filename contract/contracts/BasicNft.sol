@@ -7,10 +7,18 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "hardhat/console.sol";
 
+error VerifyFailed();
+
 contract BasicNft is ERC721, Ownable {
+    event MintedPlanet(
+        address indexed owner
+    );
+
     string public constant TOKEN_URI =
         "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/?filename=0-PUG.json";
     uint256 private s_tokenCounter;
+
+    mapping(address => bool) signers;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
         s_tokenCounter = 0;
@@ -35,16 +43,35 @@ contract BasicNft is ERC721, Ownable {
         string calldata planetStructureCID, 
         string calldata position,
         bytes memory signature
-    ) public view returns(address) {
-        bytes memory msg1 = abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position);
+    ) public returns(address) {
 
-        bytes32 msgHash = keccak256("a:b:c");
+        bool verified = verify(planetMetadataCID, planetStructureCID, position, signature);
+
+        if(!verified) {
+            revert VerifyFailed();
+        }
+
+        emit MintedPlanet(msg.sender);
+    }
+
+    function addSigner(address signer) public onlyOwner {
+        signers[signer] = true;
+    }
+
+    function verify(
+        string calldata planetMetadataCID, 
+        string calldata planetStructureCID, 
+        string calldata position,
+        bytes memory signature
+    ) public view returns(bool) {
+
+        bytes32 msgHash = keccak256(abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position));
         bytes32 msgFull = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgHash));
         address signer = this.recover(msgFull, signature);
 
-        console.logBytes(signature);
+        bool isSigner = signers[signer];
 
-        return signer;
+        return isSigner;
     }
 
     function recover(bytes32 hash, bytes memory signature) public pure returns(address) {
