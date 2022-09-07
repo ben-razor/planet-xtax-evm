@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "hardhat/console.sol";
+
 contract BasicNft is ERC721, Ownable {
     string public constant TOKEN_URI =
         "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/?filename=0-PUG.json";
@@ -26,6 +28,18 @@ contract BasicNft is ERC721, Ownable {
 
     function getTokenCounter() public view returns (uint256) {
         return s_tokenCounter;
+    }
+
+    function mintPlanet(
+        string calldata planetMetadataCID, 
+        string calldata planetStructureCID, 
+        string calldata position,
+        string calldata signature
+    ) public view returns(bytes32) {
+        bytes memory msg1 = abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position);
+        console.log(string(msg1));
+        bytes32 msgHash = sha256(msg1);
+        return msgHash;
     }
 
     function recover(bytes32 hash, bytes memory signature) public pure returns(address) {
