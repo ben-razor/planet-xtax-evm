@@ -51,21 +51,29 @@ const { developmentChains } = require("../../helper-hardhat-config")
         })
     })
 
+    const VALID_POSITION= ["0", "0", "0"]
+    const INVALID_POSITION= ["0", "1", "0"]
+
     describe("Planet", () => {
         it("mints planets", async function () {
-            const s = Buffer.from('897e5e9732a97ab5d4d0467197a2b8e22e5c0e516bdd77bfc8fb8a79f331453a374bf032807d25859a0f191292f42a25d2ff3523fa0f2b7d75249d198f05d8761c', 'hex')
+            const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+            const sInvalidPos = Buffer.from('2ae6b3f2b94274acb43bad3f5a5dc6d10f040aaed76e6a19e5fd68dac7dbac5968f24920cfca0eeb75ba42cb9be9284d7f56002d9b926e516205861f916b73691b', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                basicNft.mintPlanet("a", "b", "c", s)
+                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.be.revertedWith('VerifyFailed()')
 
             await basicNft.addSigner(a);
 
             await expect(
-                basicNft.mintPlanet("a", "b", "c", s)
+                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.emit(basicNft, 'MintedPlanet')
             .withArgs(accounts[0].address);
+
+            await expect(
+                basicNft.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
+            ).to.be.revertedWith('IncorrectLevel("1", "0")')
         })
     });
 });

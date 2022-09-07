@@ -8,11 +8,16 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 
 error VerifyFailed();
+error IncorrectLevel(string expected, string actual);
 
 contract BasicNft is ERC721, Ownable {
+    using Strings for string;
+
     event MintedPlanet(
         address indexed owner
     );
+
+    string public constant LEVEL = "0";
 
     string public constant TOKEN_URI =
         "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/?filename=0-PUG.json";
@@ -41,14 +46,23 @@ contract BasicNft is ERC721, Ownable {
     function mintPlanet(
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
-        string calldata position,
+        string[] calldata position,
         bytes memory signature
     ) public returns(address) {
 
-        bool verified = verify(planetMetadataCID, planetStructureCID, position, signature);
+        string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));
+
+        bool verified = verify(planetMetadataCID, planetStructureCID, positionStr, signature);
 
         if(!verified) {
             revert VerifyFailed();
+        }
+
+        string memory y = position[1];
+        bool isCorrectLevel = keccak256(abi.encodePacked(y)) == keccak256(abi.encodePacked(LEVEL));
+
+        if(!isCorrectLevel) {
+            revert IncorrectLevel(y, LEVEL);
         }
 
         emit MintedPlanet(msg.sender);
@@ -61,7 +75,7 @@ contract BasicNft is ERC721, Ownable {
     function verify(
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
-        string calldata position,
+        string memory position,
         bytes memory signature
     ) public view returns(bool) {
 
