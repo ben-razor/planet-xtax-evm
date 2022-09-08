@@ -15,7 +15,7 @@ error NotOwnerOfToken();
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
 
-contract BasicNft is ERC721, Ownable {
+contract XtaxPlanet is ERC721, Ownable {
     using Strings for string;
 
     event MintedPlanet(

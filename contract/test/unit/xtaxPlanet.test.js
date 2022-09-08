@@ -6,21 +6,21 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
 !developmentChains.includes(network.name)
 ? describe.skip
-: describe("Basic NFT Unit Tests", function () {
-    let basicNft, deployer
+: describe("XtaXPlanet Unit Tests", function () {
+    let xtaxPlanet, deployer
 
     beforeEach(async () => {
         accounts = await ethers.getSigners()
         deployer = accounts[0]
-        await deployments.fixture(["basicnft"])
-        basicNft = await ethers.getContract("BasicNft")
+        await deployments.fixture(["xtaxplanet"])
+        xtaxPlanet = await ethers.getContract("XtaxPlanet")
     })
 
     describe("Construtor", () => {
         it("Initilizes the NFT Correctly.", async () => {
-            const name = await basicNft.name()
-            const symbol = await basicNft.symbol()
-            const tokenCounter=await basicNft.getTokenCounter()
+            const name = await xtaxPlanet.name()
+            const symbol = await xtaxPlanet.symbol()
+            const tokenCounter=await xtaxPlanet.getTokenCounter()
             assert.equal(name, "Planet XtaX")
             assert.equal(symbol, "XTAX")
             assert.equal(tokenCounter.toString(),"0")
@@ -39,7 +39,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             const s = Buffer.from('6eecc89379e1f096c6cf1f195ae78c4cc483a4568c560ae7ade097ee83d34305650a3c224ba60bf04056ebb3520110578aeb80dfc93507f009a1b925ca81db29', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
 
-            const res = await basicNft.recover(h, s)
+            const res = await xtaxPlanet.recover(h, s)
 
             assert.equal(res, a)
         })
@@ -55,62 +55,62 @@ const { developmentChains } = require("../../helper-hardhat-config")
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.be.revertedWith('VerifyFailed()')
 
-            await basicNft.addSigner(a);
+            await xtaxPlanet.addSigner(a);
 
             await expect(
-                basicNft.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
+                xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
             ).to.be.revertedWith('IncorrectLevel("1", "0")')
 
             await expect(
-                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
-            ).to.emit(basicNft, 'MintedPlanet')
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+            ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "1", "a");
 
-            let owner = await basicNft.ownerOf(1);
+            let owner = await xtaxPlanet.ownerOf(1);
             expect(owner).to.equal(accounts[0].address)
 
             await expect(
-                basicNft.ownerOf(2)
+                xtaxPlanet.ownerOf(2)
             ).to.be.revertedWith('ERC721: owner query for nonexistent token')
 
-            let planetNFT= await basicNft.planetNFT(1);
+            let planetNFT= await xtaxPlanet.planetNFT(1);
             expect(planetNFT.owner).to.equal(accounts[0].address)
             expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
             expect(planetNFT.planetMetadataCID).to.equal("a")
             expect(planetNFT.planetStructureCID).to.equal("b")
 
-            let tokenURI = await basicNft.tokenURI(1)
+            let tokenURI = await xtaxPlanet.tokenURI(1)
             assert.equal(tokenURI, 'ipfs://' + "a")
-            let tokenCounter = await basicNft.getTokenCounter()
+            let tokenCounter = await xtaxPlanet.getTokenCounter()
             assert.equal(tokenCounter.toString(), "1")
 
-            let recentTokens = await basicNft.recentTokenIdsForAddress(accounts[0].address);
+            let recentTokens = await xtaxPlanet.recentTokenIdsForAddress(accounts[0].address);
             expect(recentTokens[0]).to.equal(1)
             expect(recentTokens).to.have.length(8);
 
             // Minting planet in same location by same user burns old and mints a new one
             await expect(
-                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
-            ).to.emit(basicNft, 'MintedPlanet')
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+            ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "2", "a");
 
             await expect(
-                basicNft.tokenURI(1)
+                xtaxPlanet.tokenURI(1)
             ).to.be.revertedWith('ERC721Metadata: URI query for nonexistent token')
 
-            tokenCounter = await basicNft.getTokenCounter()
+            tokenCounter = await xtaxPlanet.getTokenCounter()
             assert.equal(tokenCounter.toString(), "2")
 
-            planetNFT= await basicNft.planetNFT(2);
+            planetNFT= await xtaxPlanet.planetNFT(2);
             expect(planetNFT.owner).to.equal(accounts[0].address)
             expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
             expect(planetNFT.planetMetadataCID).to.equal("a")
             expect(planetNFT.planetStructureCID).to.equal("b")
             
-            recentTokens = await basicNft.recentTokenIdsForAddress(accounts[0].address);
+            recentTokens = await xtaxPlanet.recentTokenIdsForAddress(accounts[0].address);
             expect(recentTokens[0]).to.equal(2)
             expect(recentTokens[1]).to.equal(0)
 
