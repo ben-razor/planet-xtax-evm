@@ -4,6 +4,7 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./CircularBuffer.sol";
 
 import "hardhat/console.sol";
 
@@ -14,51 +15,24 @@ error NotOwnerOfToken();
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
 
-library CircularBuffer {
-
-    struct Buf {
-        uint8 idx;
-        uint8 numElems;
-        uint256[] elems;
-    }
-
-    function insert(Buf storage cb, uint256 val) internal {
-        cb.idx = wrap(cb.idx + 1, 0, cb.numElems - 1); 
-        cb.elems[cb.idx] = val;
-    }
-
-    function erase(Buf storage cb, uint8 offset) internal {
-        uint8 offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
-        delete cb.elems[offs];
-    }
-
-    function read(Buf storage cb, uint8 offset) internal view returns(uint256) {
-        uint8 offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
-        return cb.elems[offs];
-    }
-
-    function wrap(uint8 val, uint8 start, uint8 end) internal pure returns(uint8) {
-        uint8 range = end - start;
-
-        if(val > end) val = start + (val % (end + 1));
-        else if(val < start) val = end - ((start - (val + 1)) % end);
-
-        return val;
-    }
-}
-
 contract BasicNft is ERC721, Ownable {
     using Strings for string;
 
     event MintedPlanet(
-        address indexed owner
+        address indexed owner,
+        uint256 indexed tokenId,
+        string indexed planetMetadataCID
+    );
+
+    event BurnedPlanet(
+        address indexed owner,
+        uint256 indexed tokenId,
+        string indexed planetMetadataCID
     );
 
     uint8 public constant NUM_RECENT_CREATIONS = 8;
     string public constant LEVEL = "0";
 
-    string public constant TOKEN_URI =
-        "ipfs://bafybeig37ioir76s7mg5oobetncojcm3c3hxasyd4rvid4jqhy4gkaheg4/?filename=0-PUG.json";
     uint256 private s_tokenCounter;
 
     mapping(address => bool) signers;
@@ -179,8 +153,6 @@ contract BasicNft is ERC721, Ownable {
         }
 
         addPlanetToPosition(msg.sender, positionStr, planetStructureCID, planetMetadataCID);
-
-        emit MintedPlanet(msg.sender);
     }
 
     function burnPlanet(string calldata planetMetadataCID) public {
@@ -208,6 +180,8 @@ contract BasicNft is ERC721, Ownable {
         delete planetMetadataCIDToTokenId[planetMetadataCID];
 
         removeFromRecentCreations(sender, tokenId);
+
+        emit BurnedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
     function addPlanetToPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
@@ -222,6 +196,8 @@ contract BasicNft is ERC721, Ownable {
         planetMetadataCIDToTokenId[planetMetadataCID] = s_tokenCounter;
 
         addToRecentCreations(msg.sender, s_tokenCounter);
+
+        emit MintedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
     function addToRecentCreations(address sender, uint256 tokenId) internal {

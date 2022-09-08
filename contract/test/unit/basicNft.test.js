@@ -67,7 +67,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             await expect(
                 basicNft.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.emit(basicNft, 'MintedPlanet')
-            .withArgs(accounts[0].address);
+            .withArgs(accounts[0].address, "1", "a");
 
             let owner = await basicNft.ownerOf(1);
             expect(owner).to.equal(accounts[0].address)
@@ -95,7 +95,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             await expect(
                 basicNft.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.emit(basicNft, 'MintedPlanet')
-            .withArgs(accounts[0].address);
+            .withArgs(accounts[0].address, "2", "a");
 
             await expect(
                 basicNft.tokenURI(1)
