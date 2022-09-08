@@ -61,14 +61,27 @@ const { developmentChains } = require("../../helper-hardhat-config")
             await basicNft.addSigner(a);
 
             await expect(
+                basicNft.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
+            ).to.be.revertedWith('IncorrectLevel("1", "0")')
+
+            await expect(
                 basicNft.mintPlanet("a", "b", VALID_POSITION, s)
             ).to.emit(basicNft, 'MintedPlanet')
             .withArgs(accounts[0].address);
 
-            await expect(
-                basicNft.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
-            ).to.be.revertedWith('IncorrectLevel("1", "0")')
+            let owner = await basicNft.ownerOf(1);
+            expect(owner).to.equal(accounts[0].address)
 
+            await expect(
+                basicNft.ownerOf(2)
+            ).to.be.revertedWith('ERC721: owner query for nonexistent token')
+
+            let planetNFT= await basicNft.planetNFT(1);
+            expect(planetNFT.owner).to.equal(accounts[0].address)
+            expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
+            expect(planetNFT.planetMetadataCID).to.equal("a")
+            expect(planetNFT.planetStructureCID).to.equal("b")
+            
             /*
             const txResponse = await basicNft.mintNft()
             await txResponse.wait(1)

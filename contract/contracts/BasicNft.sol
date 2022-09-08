@@ -56,6 +56,18 @@ contract BasicNft is ERC721, Ownable {
         return TOKEN_URI;
     }
 
+    function planetNFT(uint256 tokenId) public view returns (PlanetInfo memory) {
+        return tokenIdToInfo[tokenId];
+    }
+
+    function positionToPlanetNFT(string calldata position) public view returns (PlanetInfo memory) {
+        return tokenIdToInfo[positionToTokenId[position]];
+    }
+
+    function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) public view returns (PlanetInfo memory) {
+        return tokenIdToInfo[planetMetadataCIDToTokenId[planetMetadataCID]];
+    }
+
     function getTokenCounter() public view returns (uint256) {
         return s_tokenCounter;
     }
