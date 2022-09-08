@@ -12,6 +12,31 @@ error IncorrectLevel(string expected, string actual);
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
 
+contract CircularBuffer {
+    public uint8 idx;
+    public uint8 numElems;
+    public uint256[] elems;
+
+    function insert(uint256 val) {
+        idx = wrap(idx + 1, 0, numElems - 1); 
+        elems[idx] = val;
+    }
+
+    function read(uint8 offset) {
+        int offs = wrap(idx + offset, 0, numElems - 1); 
+        return elems[offs];
+    }
+
+    function wrap(uint8 val, int start, int end) {
+        uint256 range = end - start;
+
+        if(val > end) val = start + (val % (end + 1));
+        else if(val < start) val = end - ((start - (val + 1)) % end);
+
+        return val;
+    }
+}
+
 contract BasicNft is ERC721, Ownable {
     using Strings for string;
 
@@ -189,4 +214,29 @@ contract BasicNft is ERC721, Ownable {
         return ECDSA.recover(hash, signature);
     }
 
+
+    struct CircluarBuffer {
+        uint8 idx;
+        uint8 numElems;
+        uint256[] elems;
+    }
+
+    function insert(CircularBuffer cb, uint256 val) {
+        cb.idx = wrap(cb.idx + 1, 0, cb.numElems - 1); 
+        cb.elems[cb.idx] = val;
+    }
+
+    function read(CircularBuffer cb, uint8 offset) {
+        int offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
+        return cb.elems[offs];
+    }
+
+    function wrap(uint8 val, int start, int end) {
+        uint256 range = end - start;
+
+        if(val > end) val = start + (val % (end + 1));
+        else if(val < start) val = end - ((start - (val + 1)) % end);
+
+        return val;
+    }
 }
