@@ -20,17 +20,22 @@ library CircularBuffer {
         uint256[] elems;
     }
 
-    function insert(Buf storage cb, uint256 val) public {
+    function insert(Buf storage cb, uint256 val) internal {
         cb.idx = wrap(cb.idx + 1, 0, cb.numElems - 1); 
         cb.elems[cb.idx] = val;
     }
 
-    function read(Buf storage cb, uint8 offset) public returns(uint256) {
+    function erase(Buf storage cb, uint8 offset) internal {
+        uint8 offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
+        delete cb.elems[offs];
+    }
+
+    function read(Buf storage cb, uint8 offset) internal view returns(uint256) {
         uint8 offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
         return cb.elems[offs];
     }
 
-    function wrap(uint8 val, uint8 start, uint8 end) public returns(uint8) {
+    function wrap(uint8 val, uint8 start, uint8 end) internal pure returns(uint8) {
         uint8 range = end - start;
 
         if(val > end) val = start + (val % (end + 1));
@@ -47,6 +52,7 @@ contract BasicNft is ERC721, Ownable {
         address indexed owner
     );
 
+    uint8 public constant NUM_RECENT_CREATIONS = 8;
     string public constant LEVEL = "0";
 
     string public constant TOKEN_URI =
@@ -181,6 +187,8 @@ contract BasicNft is ERC721, Ownable {
         delete positionToTokenId[position];
         delete planetStructureCIDToTokenId[planetStructureCID];
         delete planetMetadataCIDToTokenId[planetMetadataCID];
+
+        removeFromRecentCreations(sender, tokenId);
     }
 
     function addPlanetToPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
@@ -193,6 +201,35 @@ contract BasicNft is ERC721, Ownable {
         positionToTokenId[position] = s_tokenCounter;
         planetStructureCIDToTokenId[planetStructureCID] = s_tokenCounter;
         planetMetadataCIDToTokenId[planetMetadataCID] = s_tokenCounter;
+
+        addToRecentCreations(msg.sender, s_tokenCounter);
+    }
+
+    function addToRecentCreations(address sender, uint256 tokenId) internal {
+        if(ownerToRecentCreations[sender].numElems == 0) {
+            ownerToRecentCreations[sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+        }
+
+        CircularBuffer.insert(ownerToRecentCreations[sender], s_tokenCounter);
+    }
+
+    function removeFromRecentCreations(address sender, uint256 tokenId) internal {
+        for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+            if(CircularBuffer.read(ownerToRecentCreations[sender], i) == tokenId) {
+                CircularBuffer.erase(ownerToRecentCreations[sender], i);
+                break;
+            }
+        }
+    }
+
+    function recentTokenIdsForAddress(address sender) public view returns(uint256[] memory) {
+        uint256[] memory recentCreations = new uint256[](NUM_RECENT_CREATIONS);
+
+        for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[sender], i);
+        }
+
+        return recentCreations;
     }
 
     function addSigner(address signer) public onlyOwner {
