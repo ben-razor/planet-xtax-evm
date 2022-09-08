@@ -12,23 +12,26 @@ error IncorrectLevel(string expected, string actual);
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
 
-contract CircularBuffer {
-    public uint8 idx;
-    public uint8 numElems;
-    public uint256[] elems;
+library CircularBuffer {
 
-    function insert(uint256 val) {
-        idx = wrap(idx + 1, 0, numElems - 1); 
-        elems[idx] = val;
+    struct Buf {
+        uint8 idx;
+        uint8 numElems;
+        uint256[] elems;
     }
 
-    function read(uint8 offset) {
-        int offs = wrap(idx + offset, 0, numElems - 1); 
-        return elems[offs];
+    function insert(Buf storage cb, uint256 val) public {
+        cb.idx = wrap(cb.idx + 1, 0, cb.numElems - 1); 
+        cb.elems[cb.idx] = val;
     }
 
-    function wrap(uint8 val, int start, int end) {
-        uint256 range = end - start;
+    function read(Buf storage cb, uint8 offset) public returns(uint256) {
+        uint8 offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
+        return cb.elems[offs];
+    }
+
+    function wrap(uint8 val, uint8 start, uint8 end) public returns(uint8) {
+        uint8 range = end - start;
 
         if(val > end) val = start + (val % (end + 1));
         else if(val < start) val = end - ((start - (val + 1)) % end);
@@ -71,6 +74,8 @@ contract BasicNft is ERC721, Ownable {
     mapping(string => string) planetStructureCIDToPosition;
     mapping(string => string) positionToPlanetMetadataCID;
     mapping(string => string) positionToPlanetStructureCID;
+
+    mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
         s_tokenCounter = 0;
@@ -214,29 +219,5 @@ contract BasicNft is ERC721, Ownable {
         return ECDSA.recover(hash, signature);
     }
 
-
-    struct CircluarBuffer {
-        uint8 idx;
-        uint8 numElems;
-        uint256[] elems;
-    }
-
-    function insert(CircularBuffer cb, uint256 val) {
-        cb.idx = wrap(cb.idx + 1, 0, cb.numElems - 1); 
-        cb.elems[cb.idx] = val;
-    }
-
-    function read(CircularBuffer cb, uint8 offset) {
-        int offs = wrap(cb.idx + offset, 0, cb.numElems - 1); 
-        return cb.elems[offs];
-    }
-
-    function wrap(uint8 val, int start, int end) {
-        uint256 range = end - start;
-
-        if(val > end) val = start + (val % (end + 1));
-        else if(val < start) val = end - ((start - (val + 1)) % end);
-
-        return val;
-    }
 }
+
