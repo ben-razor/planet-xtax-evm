@@ -81,16 +81,39 @@ const { developmentChains } = require("../../helper-hardhat-config")
             expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
             expect(planetNFT.planetMetadataCID).to.equal("a")
             expect(planetNFT.planetStructureCID).to.equal("b")
-            
-            /*
-            const txResponse = await basicNft.mintNft()
-            await txResponse.wait(1)
-            const tokenURI = await basicNft.tokenURI(0)
-            const tokenCounter = await basicNft.getTokenCounter()
 
+            let tokenURI = await basicNft.tokenURI(1)
+            assert.equal(tokenURI, 'ipfs://' + "a")
+            let tokenCounter = await basicNft.getTokenCounter()
             assert.equal(tokenCounter.toString(), "1")
-            assert.equal(tokenURI, await basicNft.TOKEN_URI())
-            */
+
+            let recentTokens = await basicNft.recentTokenIdsForAddress(accounts[0].address);
+            expect(recentTokens[0]).to.equal(1)
+            expect(recentTokens).to.have.length(8);
+
+            // Minting planet in same location by same user burns old and mints a new one
+            await expect(
+                basicNft.mintPlanet("a", "b", VALID_POSITION, s)
+            ).to.emit(basicNft, 'MintedPlanet')
+            .withArgs(accounts[0].address);
+
+            await expect(
+                basicNft.tokenURI(1)
+            ).to.be.revertedWith('ERC721Metadata: URI query for nonexistent token')
+
+            tokenCounter = await basicNft.getTokenCounter()
+            assert.equal(tokenCounter.toString(), "2")
+
+            planetNFT= await basicNft.planetNFT(2);
+            expect(planetNFT.owner).to.equal(accounts[0].address)
+            expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
+            expect(planetNFT.planetMetadataCID).to.equal("a")
+            expect(planetNFT.planetStructureCID).to.equal("b")
+            
+            recentTokens = await basicNft.recentTokenIdsForAddress(accounts[0].address);
+            expect(recentTokens[0]).to.equal(2)
+            expect(recentTokens[1]).to.equal(0)
+
         })
     });
 });

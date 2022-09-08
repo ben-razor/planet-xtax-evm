@@ -9,6 +9,8 @@ import "hardhat/console.sol";
 
 error VerifyFailed();
 error IncorrectLevel(string expected, string actual);
+error PlanetNotFound();
+error NotOwnerOfToken();
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
 
@@ -87,9 +89,10 @@ contract BasicNft is ERC721, Ownable {
         s_tokenCounter = 0;
     }
 
-    function tokenURI(uint256 tokenId) public pure override returns (string memory) {
-        // require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return TOKEN_URI;
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(tokenIdToInfo[tokenId].owner != address(0), "ERC721Metadata: URI query for nonexistent token");
+
+        return string(abi.encodePacked("ipfs://", tokenIdToInfo[tokenId].planetMetadataCID));
     }
 
     function planetNFT(uint256 tokenId) public view returns (PlanetInfo memory) {
@@ -178,6 +181,22 @@ contract BasicNft is ERC721, Ownable {
         addPlanetToPosition(msg.sender, positionStr, planetStructureCID, planetMetadataCID);
 
         emit MintedPlanet(msg.sender);
+    }
+
+    function burnPlanet(string calldata planetMetadataCID) public {
+        uint256 tokenId = planetMetadataCIDToTokenId[planetMetadataCID];
+        
+        if(tokenId == 0) {
+            revert PlanetNotFound();
+        }
+
+        PlanetInfo memory info = tokenIdToInfo[tokenId];
+
+        if(info.owner != msg.sender) {
+            revert NotOwnerOfToken();
+        }
+
+        removePlanetFromPosition(msg.sender, info.position, info.planetStructureCID, info.planetMetadataCID, tokenId);
     }
 
     function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
