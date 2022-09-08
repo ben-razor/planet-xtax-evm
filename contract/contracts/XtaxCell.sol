@@ -12,8 +12,8 @@ error VerifyFailed();
 error IncorrectLevel(string expected, string actual);
 error CellNotFound();
 error NotOwnerOfToken();
-error NotOwnerOfPosition();
-error NotOwnerOfCellStructure();
+error NotOwnerOfCell();
+error AlreadyOwnerOfCell();
 
 contract XtaxCell is ERC721, Ownable {
     using Strings for string;
@@ -39,27 +39,16 @@ contract XtaxCell is ERC721, Ownable {
 
     struct CellInfo {
         address owner;
-        string position;
-        string cellStructureCID;
         string cellMetadataCID;
     }
 
-    mapping(string => uint256) positionToTokenId;
     mapping(string => uint256) cellMetadataCIDToTokenId;
-    mapping(string => uint256) cellStructureCIDToTokenId;
 
     mapping(uint256 => CellInfo) tokenIdToInfo;
 
-    mapping(string => address) positionToOwner;
-    mapping(string => address) cellStructureCIDToOwner;
-    mapping(string => address) cellMetadataCIDToOwner;
-    mapping(string => string) cellStructureCIDToPosition;
-    mapping(string => string) positionToCellMetadataCID;
-    mapping(string => string) positionToCellStructureCID;
-
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
-    constructor() ERC721("Cell XtaX", "XTAX") {
+    constructor() ERC721("XtaX Cell", "XTAXC") {
         s_tokenCounter = 0;
     }
 
@@ -73,10 +62,6 @@ contract XtaxCell is ERC721, Ownable {
         return tokenIdToInfo[tokenId];
     }
 
-    function positionToCellNFT(string calldata position) public view returns (CellInfo memory) {
-        return tokenIdToInfo[positionToTokenId[position]];
-    }
-
     function cellMetadataCIDToCellNFT(string calldata cellMetadataCID) public view returns (CellInfo memory) {
         return tokenIdToInfo[cellMetadataCIDToTokenId[cellMetadataCID]];
     }
@@ -87,72 +72,25 @@ contract XtaxCell is ERC721, Ownable {
 
     function mintCell(
         string calldata cellMetadataCID, 
-        string calldata cellStructureCID, 
-        string[] calldata position,
         bytes memory signature
     ) public returns(address) {
 
-        // If trying to mint on wrong level (vertical height not available on this blockchain)
-        if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
-            revert IncorrectLevel(position[1], LEVEL);
-        }
-
-        string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));
-
-        if(!verify(cellMetadataCID, cellStructureCID, positionStr, signature)) {
+        if(!verify(cellMetadataCID, signature)) {
             revert VerifyFailed();
         }
 
-        uint256 tokenIdToBurn = 0;
-        bool senderOwnsPosition = false;
-        
-        // If position already has cell
-        if(positionToTokenId[positionStr] != 0) {
-            // If it is owned by a different Xtaxian
-            if(tokenIdToInfo[positionToTokenId[positionStr]].owner != msg.sender) {
-                revert NotOwnerOfPosition();
-            }
-            else {
-                senderOwnsPosition = true;
-            }
-        }
-
-        bool senderOwnsStructure = false;
-
         // If structure is already owned
-        if(cellStructureCIDToTokenId[cellStructureCID] != 0) {
+        if(cellMetadataCIDToTokenId[cellMetadataCID] != 0) {
             // If it is owned by a different Xtaxian
-            if(tokenIdToInfo[cellStructureCIDToTokenId[cellStructureCID]].owner != msg.sender) {
-                revert NotOwnerOfCellStructure();
+            if(tokenIdToInfo[cellMetadataCIDToTokenId[cellMetadataCID]].owner != msg.sender) {
+                revert NotOwnerOfCell();
             }
             else {
-                senderOwnsStructure = true;
+                revert AlreadyOwnerOfCell();
             }
         }
 
-        if(senderOwnsStructure) {
-            uint256 tokenId = cellStructureCIDToTokenId[cellStructureCID];
-            CellInfo memory info = tokenIdToInfo[tokenId];
-            removeCellFromPosition(msg.sender, 
-                info.position,
-                cellStructureCID,
-                info.cellMetadataCID,
-                tokenId
-            );
-        }
-        else if(senderOwnsPosition) {
-            uint256 tokenId = positionToTokenId[positionStr];
-            CellInfo memory info = tokenIdToInfo[tokenId];
-            removeCellFromPosition(msg.sender, 
-                positionStr, 
-                info.cellStructureCID,
-                info.cellMetadataCID,
-                tokenId
-            );
-            tokenIdToBurn = positionToTokenId[positionStr];
-        }
-
-        addCellToPosition(msg.sender, positionStr, cellStructureCID, cellMetadataCID);
+        addCell(msg.sender, cellMetadataCID);
     }
 
     function burnCell(string calldata cellMetadataCID) public {
@@ -168,15 +106,13 @@ contract XtaxCell is ERC721, Ownable {
             revert NotOwnerOfToken();
         }
 
-        removeCellFromPosition(msg.sender, info.position, info.cellStructureCID, info.cellMetadataCID, tokenId);
+        removeCell(msg.sender, info.cellMetadataCID, tokenId);
     }
 
-    function removeCellFromPosition(address sender, string memory position, string memory cellStructureCID, string memory cellMetadataCID, uint256 tokenId) internal {
+    function removeCell(address sender, string memory cellMetadataCID, uint256 tokenId) internal {
         _burn(tokenId);
 
         delete tokenIdToInfo[tokenId];
-        delete positionToTokenId[position];
-        delete cellStructureCIDToTokenId[cellStructureCID];
         delete cellMetadataCIDToTokenId[cellMetadataCID];
 
         removeFromRecentCreations(sender, tokenId);
@@ -184,15 +120,13 @@ contract XtaxCell is ERC721, Ownable {
         emit BurnedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
-    function addCellToPosition(address sender, string memory position, string memory cellStructureCID, string memory cellMetadataCID) internal {
+    function addCell(address sender, string memory cellMetadataCID) internal {
 
         s_tokenCounter = s_tokenCounter + 1;
         _safeMint(msg.sender, s_tokenCounter);
 
-        tokenIdToInfo[s_tokenCounter] = CellInfo(msg.sender, position, cellStructureCID, cellMetadataCID);
+        tokenIdToInfo[s_tokenCounter] = CellInfo(msg.sender, cellMetadataCID);
 
-        positionToTokenId[position] = s_tokenCounter;
-        cellStructureCIDToTokenId[cellStructureCID] = s_tokenCounter;
         cellMetadataCIDToTokenId[cellMetadataCID] = s_tokenCounter;
 
         addToRecentCreations(msg.sender, s_tokenCounter);
@@ -233,21 +167,19 @@ contract XtaxCell is ERC721, Ownable {
 
     function verify(
         string calldata cellMetadataCID, 
-        string calldata cellStructureCID, 
-        string memory position,
         bytes memory signature
     ) public view returns(bool) {
 
-        bytes32 msgHash = keccak256(abi.encodePacked(cellMetadataCID, ":", cellStructureCID, ":", position));
+        bytes32 msgHash = keccak256(abi.encodePacked(cellMetadataCID));
         bytes32 msgFull = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgHash));
-        address signer = this.recover(msgFull, signature);
+        address signer = recover(msgFull, signature);
 
         bool isSigner = signers[signer];
 
         return isSigner;
     }
 
-    function recover(bytes32 hash, bytes memory signature) public pure returns(address) {
+    function recover(bytes32 hash, bytes memory signature) internal pure returns(address) {
         return ECDSA.recover(hash, signature);
     }
 
