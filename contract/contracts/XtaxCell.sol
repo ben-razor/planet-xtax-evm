@@ -48,12 +48,15 @@ contract XtaxCell is ERC721, Ownable {
 
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
-    constructor() ERC721("XtaX Cell", "XTAXC") {
+    constructor(address signer) ERC721("Planet XtaX Cell", "XTAXC") {
         s_tokenCounter = 0;
+        addSigner(signer);
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(tokenIdToInfo[tokenId].owner != address(0), "ERC721Metadata: URI query for nonexistent token");
+        if(tokenIdToInfo[tokenId].owner == address(0)) {
+            revert CellNotFound();
+        }
 
         return string(abi.encodePacked("ipfs://", tokenIdToInfo[tokenId].cellMetadataCID));
     }

@@ -21,7 +21,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             const name = await xtaxPlanet.name()
             const symbol = await xtaxPlanet.symbol()
             const tokenCounter=await xtaxPlanet.getTokenCounter()
-            assert.equal(name, "Planet XtaX")
+            assert.equal(name, "Planet XtaX Planet")
             assert.equal(symbol, "XTAX")
             assert.equal(tokenCounter.toString(),"0")
         })
@@ -99,7 +99,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
             await expect(
                 xtaxPlanet.tokenURI(1)
-            ).to.be.revertedWith('ERC721Metadata: URI query for nonexistent token')
+            ).to.be.revertedWith('PlanetNotFound()')
 
             tokenCounter = await xtaxPlanet.getTokenCounter()
             assert.equal(tokenCounter.toString(), "2")

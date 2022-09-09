@@ -7,7 +7,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
 
     log("----------------------------------------------------")
-    arguments = []
+    arguments = [process.env.SIGNER]
     const xtaxPlanet = await deploy("XtaxPlanet", {
         from: deployer,
         args: arguments,
@@ -20,6 +20,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         log("Verifying...")
         await verify(xtaxPlanet.address, arguments)
     }
+
 }
 
 module.exports.tags = ["all", "xtaxplanet", "main"]

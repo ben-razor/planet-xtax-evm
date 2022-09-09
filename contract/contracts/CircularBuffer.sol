@@ -25,7 +25,7 @@ library CircularBuffer {
     }
 
     function wrap(uint8 val, uint8 start, uint8 end) internal pure returns(uint8) {
-        
+
         if(val > end) val = start + (val % (end + 1));
         else if(val < start) val = end - ((start - (val + 1)) % end);
 

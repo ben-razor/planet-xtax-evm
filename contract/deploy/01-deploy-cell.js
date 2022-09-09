@@ -7,7 +7,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
 
     log("----------------------------------------------------")
-    arguments = []
+    arguments = [process.env.SIGNER]
     const xtaxCell = await deploy("XtaxCell", {
         from: deployer,
         args: arguments,

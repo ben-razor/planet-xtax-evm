@@ -51,8 +51,9 @@ contract XtaxPlanet is ERC721, Ownable {
     mapping(uint256 => PlanetInfo) tokenIdToInfo;
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
-    constructor() ERC721("Planet XtaX", "XTAX") {
+    constructor(address signer) ERC721("Planet XtaX Planet", "XTAX") {
         s_tokenCounter = 0;
+        addSigner(signer);
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
