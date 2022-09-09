@@ -73,7 +73,7 @@ contract XtaxCell is ERC721, Ownable {
     function mintCell(
         string calldata cellMetadataCID, 
         bytes memory signature
-    ) public returns(address) {
+    ) public {
 
         if(!verify(cellMetadataCID, signature)) {
             revert VerifyFailed();
@@ -90,7 +90,7 @@ contract XtaxCell is ERC721, Ownable {
             }
         }
 
-        addCell(msg.sender, cellMetadataCID);
+        addCell(cellMetadataCID);
     }
 
     function burnCell(string calldata cellMetadataCID) public {
@@ -106,21 +106,21 @@ contract XtaxCell is ERC721, Ownable {
             revert NotOwnerOfToken();
         }
 
-        removeCell(msg.sender, info.cellMetadataCID, tokenId);
+        removeCell(info.cellMetadataCID, tokenId);
     }
 
-    function removeCell(address sender, string memory cellMetadataCID, uint256 tokenId) internal {
+    function removeCell(string memory cellMetadataCID, uint256 tokenId) internal {
         _burn(tokenId);
 
         delete tokenIdToInfo[tokenId];
         delete cellMetadataCIDToTokenId[cellMetadataCID];
 
-        removeFromRecentCreations(sender, tokenId);
+        removeFromRecentCreations(tokenId);
 
         emit BurnedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
-    function addCell(address sender, string memory cellMetadataCID) internal {
+    function addCell(string memory cellMetadataCID) internal {
 
         s_tokenCounter = s_tokenCounter + 1;
         _safeMint(msg.sender, s_tokenCounter);
@@ -129,33 +129,33 @@ contract XtaxCell is ERC721, Ownable {
 
         cellMetadataCIDToTokenId[cellMetadataCID] = s_tokenCounter;
 
-        addToRecentCreations(msg.sender, s_tokenCounter);
+        addToRecentCreations(s_tokenCounter);
 
         emit MintedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
-    function addToRecentCreations(address sender, uint256 tokenId) internal {
-        if(ownerToRecentCreations[sender].numElems == 0) {
-            ownerToRecentCreations[sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+    function addToRecentCreations(uint256 tokenId) internal {
+        if(ownerToRecentCreations[msg.sender].numElems == 0) {
+            ownerToRecentCreations[msg.sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
         }
 
-        CircularBuffer.insert(ownerToRecentCreations[sender], s_tokenCounter);
+        CircularBuffer.insert(ownerToRecentCreations[msg.sender], tokenId);
     }
 
-    function removeFromRecentCreations(address sender, uint256 tokenId) internal {
+    function removeFromRecentCreations(uint256 tokenId) internal {
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            if(CircularBuffer.read(ownerToRecentCreations[sender], i) == tokenId) {
-                CircularBuffer.erase(ownerToRecentCreations[sender], i);
+            if(CircularBuffer.read(ownerToRecentCreations[msg.sender], i) == tokenId) {
+                CircularBuffer.erase(ownerToRecentCreations[msg.sender], i);
                 break;
             }
         }
     }
 
-    function recentTokenIdsForAddress(address sender) public view returns(uint256[] memory) {
+    function recentTokenIdsForAddress(address owner) public view returns(uint256[] memory) {
         uint256[] memory recentCreations = new uint256[](NUM_RECENT_CREATIONS);
 
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[sender], i);
+            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[owner], i);
         }
 
         return recentCreations;

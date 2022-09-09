@@ -44,19 +44,11 @@ contract XtaxPlanet is ERC721, Ownable {
         string planetMetadataCID;
     }
 
-    mapping(string => uint256) positionToTokenId;
-    mapping(string => uint256) planetMetadataCIDToTokenId;
+    mapping(string => uint256) public positionToTokenId;
+    mapping(string => uint256) public planetMetadataCIDToTokenId;
     mapping(string => uint256) planetStructureCIDToTokenId;
 
     mapping(uint256 => PlanetInfo) tokenIdToInfo;
-
-    mapping(string => address) positionToOwner;
-    mapping(string => address) planetStructureCIDToOwner;
-    mapping(string => address) planetMetadataCIDToOwner;
-    mapping(string => string) planetStructureCIDToPosition;
-    mapping(string => string) positionToPlanetMetadataCID;
-    mapping(string => string) positionToPlanetStructureCID;
-
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
     constructor() ERC721("Planet XtaX", "XTAX") {
@@ -64,7 +56,9 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(tokenIdToInfo[tokenId].owner != address(0), "ERC721Metadata: URI query for nonexistent token");
+        if(tokenIdToInfo[tokenId].owner == address(0)) {
+            revert PlanetNotFound();
+        }
 
         return string(abi.encodePacked("ipfs://", tokenIdToInfo[tokenId].planetMetadataCID));
     }
@@ -75,6 +69,17 @@ contract XtaxPlanet is ERC721, Ownable {
 
     function positionToPlanetNFT(string calldata position) public view returns (PlanetInfo memory) {
         return tokenIdToInfo[positionToTokenId[position]];
+    }
+
+    function positionsToPlanetNFTS(string[] calldata positions) public view returns(PlanetInfo[] memory) {
+        PlanetInfo[] memory planetInfos = new PlanetInfo[](positions.length);
+
+        for(uint8 i = 0; i < positions.length; i++) {
+            string memory position = positions[i];
+            planetInfos[i] = tokenIdToInfo[positionToTokenId[position]];
+        }
+
+        return planetInfos;
     }
 
     function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) public view returns (PlanetInfo memory) {
@@ -90,7 +95,7 @@ contract XtaxPlanet is ERC721, Ownable {
         string calldata planetStructureCID, 
         string[] calldata position,
         bytes memory signature
-    ) public returns(address) {
+    ) public {
 
         // If trying to mint on wrong level (vertical height not available on this blockchain)
         if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
@@ -133,7 +138,7 @@ contract XtaxPlanet is ERC721, Ownable {
         if(senderOwnsStructure) {
             uint256 tokenId = planetStructureCIDToTokenId[planetStructureCID];
             PlanetInfo memory info = tokenIdToInfo[tokenId];
-            removePlanetFromPosition(msg.sender, 
+            removePlanetFromPosition(
                 info.position,
                 planetStructureCID,
                 info.planetMetadataCID,
@@ -143,7 +148,7 @@ contract XtaxPlanet is ERC721, Ownable {
         else if(senderOwnsPosition) {
             uint256 tokenId = positionToTokenId[positionStr];
             PlanetInfo memory info = tokenIdToInfo[tokenId];
-            removePlanetFromPosition(msg.sender, 
+            removePlanetFromPosition(
                 positionStr, 
                 info.planetStructureCID,
                 info.planetMetadataCID,
@@ -152,7 +157,7 @@ contract XtaxPlanet is ERC721, Ownable {
             tokenIdToBurn = positionToTokenId[positionStr];
         }
 
-        addPlanetToPosition(msg.sender, positionStr, planetStructureCID, planetMetadataCID);
+        addPlanetToPosition(positionStr, planetStructureCID, planetMetadataCID);
     }
 
     function burnPlanet(string calldata planetMetadataCID) public {
@@ -168,10 +173,10 @@ contract XtaxPlanet is ERC721, Ownable {
             revert NotOwnerOfToken();
         }
 
-        removePlanetFromPosition(msg.sender, info.position, info.planetStructureCID, info.planetMetadataCID, tokenId);
+        removePlanetFromPosition(info.position, info.planetStructureCID, info.planetMetadataCID, tokenId);
     }
 
-    function removePlanetFromPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
+    function removePlanetFromPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
         _burn(tokenId);
 
         delete tokenIdToInfo[tokenId];
@@ -179,12 +184,12 @@ contract XtaxPlanet is ERC721, Ownable {
         delete planetStructureCIDToTokenId[planetStructureCID];
         delete planetMetadataCIDToTokenId[planetMetadataCID];
 
-        removeFromRecentCreations(sender, tokenId);
+        removeFromRecentCreations(tokenId);
 
         emit BurnedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
-    function addPlanetToPosition(address sender, string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
+    function addPlanetToPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
 
         s_tokenCounter = s_tokenCounter + 1;
         _safeMint(msg.sender, s_tokenCounter);
@@ -195,33 +200,33 @@ contract XtaxPlanet is ERC721, Ownable {
         planetStructureCIDToTokenId[planetStructureCID] = s_tokenCounter;
         planetMetadataCIDToTokenId[planetMetadataCID] = s_tokenCounter;
 
-        addToRecentCreations(msg.sender, s_tokenCounter);
+        addToRecentCreations(s_tokenCounter);
 
         emit MintedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
-    function addToRecentCreations(address sender, uint256 tokenId) internal {
-        if(ownerToRecentCreations[sender].numElems == 0) {
-            ownerToRecentCreations[sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+    function addToRecentCreations(uint256 tokenId) internal {
+        if(ownerToRecentCreations[msg.sender].numElems == 0) {
+            ownerToRecentCreations[msg.sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
         }
 
-        CircularBuffer.insert(ownerToRecentCreations[sender], s_tokenCounter);
+        CircularBuffer.insert(ownerToRecentCreations[msg.sender], tokenId);
     }
 
-    function removeFromRecentCreations(address sender, uint256 tokenId) internal {
+    function removeFromRecentCreations(uint256 tokenId) internal {
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            if(CircularBuffer.read(ownerToRecentCreations[sender], i) == tokenId) {
-                CircularBuffer.erase(ownerToRecentCreations[sender], i);
+            if(CircularBuffer.read(ownerToRecentCreations[msg.sender], i) == tokenId) {
+                CircularBuffer.erase(ownerToRecentCreations[msg.sender], i);
                 break;
             }
         }
     }
 
-    function recentTokenIdsForAddress(address sender) public view returns(uint256[] memory) {
+    function recentTokenIdsForAddress(address owner) public view returns(uint256[] memory) {
         uint256[] memory recentCreations = new uint256[](NUM_RECENT_CREATIONS);
 
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[sender], i);
+            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[owner], i);
         }
 
         return recentCreations;

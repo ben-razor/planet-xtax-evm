@@ -36,7 +36,6 @@ const { developmentChains } = require("../../helper-hardhat-config")
     describe("Cell", () => {
         it("mints cells", async function () {
             const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
-            const sInvalidPos = Buffer.from('2ae6b3f2b94274acb43bad3f5a5dc6d10f040aaed76e6a19e5fd68dac7dbac5968f24920cfca0eeb75ba42cb9be9284d7f56002d9b926e516205861f916b73691b', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
