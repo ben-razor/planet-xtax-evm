@@ -87,8 +87,8 @@ const { developmentChains } = require("../../helper-hardhat-config")
             let tokenCounter = await xtaxPlanet.getTokenCounter()
             assert.equal(tokenCounter.toString(), "1")
 
-            let recentTokens = await xtaxPlanet.recentTokenIdsForAddress(accounts[0].address);
-            expect(recentTokens[0]).to.equal(1)
+            let recentTokens = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
+            expect(recentTokens[0].planetMetadataCID).to.equal('a')
             expect(recentTokens).to.have.length(8);
 
             // Minting planet in same location by same user burns old and mints a new one
@@ -110,9 +110,9 @@ const { developmentChains } = require("../../helper-hardhat-config")
             expect(planetNFT.planetMetadataCID).to.equal("a")
             expect(planetNFT.planetStructureCID).to.equal("b")
             
-            recentTokens = await xtaxPlanet.recentTokenIdsForAddress(accounts[0].address);
-            expect(recentTokens[0]).to.equal(2)
-            expect(recentTokens[1]).to.equal(0)
+            recentTokens = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
+            expect(recentTokens[0].planetMetadataCID).to.equal('a')
+            expect(recentTokens[1].planetMetadataCID).to.equal('')
 
         })
     });

@@ -223,14 +223,15 @@ contract XtaxPlanet is ERC721, Ownable {
         }
     }
 
-    function recentTokenIdsForAddress(address owner) public view returns(uint256[] memory) {
-        uint256[] memory recentCreations = new uint256[](NUM_RECENT_CREATIONS);
+    function recentPlanetsForAddress(address owner) public view returns(PlanetInfo[] memory) {
+        PlanetInfo[] memory planetInfos = new PlanetInfo[](NUM_RECENT_CREATIONS);
 
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            recentCreations[i] = CircularBuffer.read(ownerToRecentCreations[owner], i);
+            uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], i);
+            planetInfos[i] = tokenIdToInfo[tokenId];
         }
 
-        return recentCreations;
+        return planetInfos;
     }
 
     function addSigner(address signer) public onlyOwner {
