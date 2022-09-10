@@ -3,7 +3,7 @@
 const { assert, expect } = require("chai")
 const { network, deployments, ethers } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
-const { cell1, cell2} = require('../data/cell/test_cells_1')
+const { cells } = require('../data/cell/test_cells_1')
 
 !developmentChains.includes(network.name)
 ? describe.skip
@@ -46,9 +46,19 @@ const { cell1, cell2} = require('../data/cell/test_cells_1')
             await xtaxCell.addSigner(a);
 
             await expect(
-                xtaxCell.mintCell(cell1.msg, Buffer.from(cell1.sigHex, 'hex'))
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
             ).to.emit(xtaxCell, 'MintedCell')
-            .withArgs(accounts[0].address, 1, cell1.msg);
+            .withArgs(accounts[0].address, 1, cells[0].msg);
+
+            for(let i = 1; i < 8; i++) {
+                await xtaxCell.mintCell(cells[i].msg, Buffer.from(cells[i].sigHex, 'hex'))
+            }
+
+            let recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
+            console.log(JSON.stringify(recentCells));
+            
+            expect(recentCells[0].cellMetadataCID).to.equal(cells[7].msg)
+            expect(recentCells[7].cellMetadataCID).to.equal(cells[0].msg)
 
             /*
             let owner = await xtaxCell.ownerOf(1);

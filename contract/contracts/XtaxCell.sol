@@ -147,8 +147,8 @@ contract XtaxCell is ERC721, Ownable {
 
     function removeFromRecentCreations(uint256 tokenId) internal {
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            if(CircularBuffer.read(ownerToRecentCreations[msg.sender], i) == tokenId) {
-                CircularBuffer.erase(ownerToRecentCreations[msg.sender], i);
+            if(CircularBuffer.read(ownerToRecentCreations[msg.sender], int8(i)) == tokenId) {
+                CircularBuffer.erase(ownerToRecentCreations[msg.sender], int8(i));
                 break;
             }
         }
@@ -158,7 +158,7 @@ contract XtaxCell is ERC721, Ownable {
         CellInfo[] memory cellInfos = new CellInfo[](NUM_RECENT_CREATIONS);
 
         for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], i);
+            uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], int8(i));
             cellInfos[i] = tokenIdToInfo[tokenId];
         }
 
