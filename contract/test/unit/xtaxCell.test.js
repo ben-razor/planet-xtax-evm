@@ -60,6 +60,15 @@ const { cells } = require('../data/cell/test_cells_1')
             expect(recentCells[0].cellMetadataCID).to.equal(cells[7].msg)
             expect(recentCells[7].cellMetadataCID).to.equal(cells[0].msg)
 
+            await xtaxCell.mintCell(cells[8].msg, Buffer.from(cells[8].sigHex, 'hex'))
+
+            recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
+            console.log(JSON.stringify(recentCells));
+            
+            expect(recentCells[0].cellMetadataCID).to.equal(cells[8].msg)
+            expect(recentCells[7].cellMetadataCID).to.equal(cells[1].msg)
+
+
             /*
             let owner = await xtaxCell.ownerOf(1);
             expect(owner).to.equal(accounts[0].address)
