@@ -3,6 +3,7 @@
 const { assert, expect } = require("chai")
 const { network, deployments, ethers } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
+const { cell1, cell2} = require('../data/cell/test_cells_1')
 
 !developmentChains.includes(network.name)
 ? describe.skip
@@ -44,12 +45,12 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
             await xtaxCell.addSigner(a);
 
-            /*
             await expect(
-                xtaxCell.mintCell("a", "b", VALID_POSITION, s)
+                xtaxCell.mintCell(cell1.msg, Buffer.from(cell1.sigHex, 'hex'))
             ).to.emit(xtaxCell, 'MintedCell')
-            .withArgs(accounts[0].address, "1", "a");
+            .withArgs(accounts[0].address, 1, cell1.msg);
 
+            /*
             let owner = await xtaxCell.ownerOf(1);
             expect(owner).to.equal(accounts[0].address)
 
