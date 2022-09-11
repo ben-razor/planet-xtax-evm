@@ -157,9 +157,11 @@ contract XtaxCell is ERC721, Ownable {
     function recentCellsForAddress(address owner) public view returns(CellInfo[] memory) {
         CellInfo[] memory cellInfos = new CellInfo[](NUM_RECENT_CREATIONS);
 
-        for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], int8(i));
-            cellInfos[i] = tokenIdToInfo[tokenId];
+        if(ownerToRecentCreations[owner].numElems !=  0) {
+            for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+                uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], int8(i));
+                cellInfos[i] = tokenIdToInfo[tokenId];
+            }
         }
 
         return cellInfos;

@@ -36,6 +36,7 @@ const { cells } = require('../data/cell/test_cells_1')
 
     describe("Cell", () => {
         it("mints cells", async function () {
+            let recentCells
             const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
@@ -44,6 +45,9 @@ const { cells } = require('../data/cell/test_cells_1')
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxCell.addSigner(a);
+
+            recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
+            expect(recentCells[0].cellMetadataCID).to.equal('')
 
             await expect(
                 xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
@@ -54,7 +58,7 @@ const { cells } = require('../data/cell/test_cells_1')
                 await xtaxCell.mintCell(cells[i].msg, Buffer.from(cells[i].sigHex, 'hex'))
             }
 
-            let recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
+            recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
             console.log(JSON.stringify(recentCells));
             
             expect(recentCells[0].cellMetadataCID).to.equal(cells[7].msg)

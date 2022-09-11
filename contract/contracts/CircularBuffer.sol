@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+/** 
+    A small cicular buffer.
+
+    ONLY SUPPORTS UP TO 128 elems ALLOW NEGATIVE INDEXING 
+*/
 library CircularBuffer {
 
     struct Buf {
+        /** ONLY SUPPORTS HALF RANGE 0-127 TO ALLOW NEGATIVE INDEXING */
         uint8 idx;
         uint8 numElems;
         uint256[] elems;
