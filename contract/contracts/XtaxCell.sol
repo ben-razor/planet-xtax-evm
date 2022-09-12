@@ -30,6 +30,13 @@ contract XtaxCell is ERC721, Ownable {
         string indexed cellMetadataCID
     );
 
+    event TransferredCell(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId,
+        string cellMetadataCID
+    );
+
     uint8 public constant NUM_RECENT_CREATIONS = 8;
     string public constant LEVEL = "0";
 
@@ -137,6 +144,14 @@ contract XtaxCell is ERC721, Ownable {
         emit MintedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
+    function transferFrom(address from, address to, uint256 tokenId) public override {
+        super.transferFrom(from, to, tokenId);
+
+        CellInfo memory info = tokenIdToInfo[tokenId];
+
+        emit TransferredCell(from, to, tokenId, info.cellMetadataCID);
+    }
+
     function addToRecentCreations(uint256 tokenId) internal {
         if(ownerToRecentCreations[msg.sender].numElems == 0) {
             ownerToRecentCreations[msg.sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
@@ -146,10 +161,12 @@ contract XtaxCell is ERC721, Ownable {
     }
 
     function removeFromRecentCreations(uint256 tokenId) internal {
-        for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-            if(CircularBuffer.read(ownerToRecentCreations[msg.sender], int8(i)) == tokenId) {
-                CircularBuffer.erase(ownerToRecentCreations[msg.sender], int8(i));
-                break;
+        if(ownerToRecentCreations[msg.sender].numElems !=  0) {
+            for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+                if(CircularBuffer.read(ownerToRecentCreations[msg.sender], int8(i)) == tokenId) {
+                    CircularBuffer.erase(ownerToRecentCreations[msg.sender], int8(i));
+                    break;
+                }
             }
         }
     }

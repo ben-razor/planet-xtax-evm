@@ -122,4 +122,32 @@ const { cells } = require('../data/cell/test_cells_1')
             */
         })
     });
+
+    describe("Transfer", () => {
+        it("transfers cells", async () => {
+            let acc1 = accounts[0].address
+            let acc2 = accounts[1].address
+            let owner;
+
+            await expect(
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
+            ).to.emit(xtaxCell, 'MintedCell')
+            .withArgs(accounts[0].address, 1, cells[0].msg);
+
+            owner = await xtaxCell.ownerOf(1)
+            expect(owner).to.equal(acc1)
+
+            await expect(
+                xtaxCell.transferFrom(acc1, acc2, 1)
+            ).to.emit(xtaxCell, 'Transfer')
+            .withArgs(acc1, acc2, 1)
+            .to.emit(xtaxCell, 'TransferredCell')
+            .withArgs(acc1, acc2, 1, cells[0].cid)
+
+            owner = await xtaxCell.ownerOf(1)
+            expect(owner).to.equal(acc2)
+
+        })
+    })
+
 });
