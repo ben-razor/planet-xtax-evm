@@ -14,6 +14,7 @@ error CellNotFound();
 error NotOwnerOfToken();
 error NotOwnerOfCell();
 error AlreadyOwnerOfCell();
+error NotEnoughWei(uint expected, uint actual);
 
 contract XtaxCell is ERC721, Ownable {
     using Strings for string;
@@ -39,6 +40,7 @@ contract XtaxCell is ERC721, Ownable {
 
     uint8 public constant NUM_RECENT_CREATIONS = 8;
     string public constant LEVEL = "0";
+    uint public s_mintPrice = 0.1 ether;
 
     uint256 private s_tokenCounter;
 
@@ -80,10 +82,22 @@ contract XtaxCell is ERC721, Ownable {
         return s_tokenCounter;
     }
 
+    function withdraw(address payable to, uint amount) public onlyOwner {
+        to.transfer(amount);
+    }
+
+    function setMintPrice(uint amount) public onlyOwner {
+        s_mintPrice = amount;
+    }
+
     function mintCell(
         string calldata cellMetadataCID, 
         bytes memory signature
-    ) public {
+    ) public payable {
+
+        if(msg.value < s_mintPrice) {
+            revert NotEnoughWei(s_mintPrice, msg.value);
+        }
 
         if(!verify(cellMetadataCID, signature)) {
             revert VerifyFailed();

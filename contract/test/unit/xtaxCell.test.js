@@ -8,13 +8,14 @@ const { cells } = require('../data/cell/test_cells_1')
 !developmentChains.includes(network.name)
 ? describe.skip
 : describe("XtaXCell Unit Tests", function () {
-    let xtaxCell, deployer
+    let xtaxCell, deployer, mintValue
 
     beforeEach(async () => {
         accounts = await ethers.getSigners()
         deployer = accounts[0]
         await deployments.fixture(["xtaxcell"])
         xtaxCell = await ethers.getContract("XtaxCell")
+        mintValue = {value: ethers.utils.parseEther("0.1")}
     })
 
     describe("Construtor", () => {
@@ -41,7 +42,7 @@ const { cells } = require('../data/cell/test_cells_1')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                xtaxCell.mintCell("a", s)
+                xtaxCell.mintCell("a", s, mintValue)
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxCell.addSigner(a);
@@ -50,12 +51,12 @@ const { cells } = require('../data/cell/test_cells_1')
             expect(recentCells[0].cellMetadataCID).to.equal('')
 
             await expect(
-                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'), mintValue)
             ).to.emit(xtaxCell, 'MintedCell')
             .withArgs(accounts[0].address, 1, cells[0].msg);
 
             for(let i = 1; i < 8; i++) {
-                await xtaxCell.mintCell(cells[i].msg, Buffer.from(cells[i].sigHex, 'hex'))
+                await xtaxCell.mintCell(cells[i].msg, Buffer.from(cells[i].sigHex, 'hex'), mintValue)
             }
 
             recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
@@ -64,7 +65,7 @@ const { cells } = require('../data/cell/test_cells_1')
             expect(recentCells[0].cellMetadataCID).to.equal(cells[7].msg)
             expect(recentCells[7].cellMetadataCID).to.equal(cells[0].msg)
 
-            await xtaxCell.mintCell(cells[8].msg, Buffer.from(cells[8].sigHex, 'hex'))
+            await xtaxCell.mintCell(cells[8].msg, Buffer.from(cells[8].sigHex, 'hex'), mintValue)
 
             recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
             console.log(JSON.stringify(recentCells));
@@ -130,7 +131,7 @@ const { cells } = require('../data/cell/test_cells_1')
             let owner, nft, recentCells, balance;
 
             await expect(
-                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'), mintValue)
             ).to.emit(xtaxCell, 'MintedCell')
             .withArgs(accounts[0].address, 1, cells[0].msg);
 
