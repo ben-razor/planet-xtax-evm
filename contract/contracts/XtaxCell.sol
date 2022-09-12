@@ -125,7 +125,7 @@ contract XtaxCell is ERC721, Ownable {
         delete tokenIdToInfo[tokenId];
         delete cellMetadataCIDToTokenId[cellMetadataCID];
 
-        removeFromRecentCreations(tokenId);
+        removeFromRecentCreations(msg.sender, tokenId);
 
         emit BurnedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
@@ -139,32 +139,49 @@ contract XtaxCell is ERC721, Ownable {
 
         cellMetadataCIDToTokenId[cellMetadataCID] = s_tokenCounter;
 
-        addToRecentCreations(s_tokenCounter);
+        addToRecentCreations(msg.sender, s_tokenCounter);
 
         emit MintedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public override {
         super.transferFrom(from, to, tokenId);
+        _transferCell(from, to, tokenId);
+    }
 
-        CellInfo memory info = tokenIdToInfo[tokenId];
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override {
+        super.safeTransferFrom(from, to, tokenId);
+        _transferCell(from, to, tokenId);
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+        super.safeTransferFrom(from, to, tokenId, data);
+        _transferCell(from, to, tokenId);
+    }
+
+    function _transferCell(address from, address to, uint256 tokenId) internal {
+        CellInfo storage info = tokenIdToInfo[tokenId];
+
+        info.owner = to;
+        addToRecentCreations(to, tokenId);
+        removeFromRecentCreations(from, tokenId);
 
         emit TransferredCell(from, to, tokenId, info.cellMetadataCID);
     }
 
-    function addToRecentCreations(uint256 tokenId) internal {
-        if(ownerToRecentCreations[msg.sender].numElems == 0) {
-            ownerToRecentCreations[msg.sender] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+    function addToRecentCreations(address owner, uint256 tokenId) internal {
+        if(ownerToRecentCreations[owner].numElems == 0) {
+            ownerToRecentCreations[owner] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
         }
 
-        CircularBuffer.insert(ownerToRecentCreations[msg.sender], tokenId);
+        CircularBuffer.insert(ownerToRecentCreations[owner], tokenId);
     }
 
-    function removeFromRecentCreations(uint256 tokenId) internal {
-        if(ownerToRecentCreations[msg.sender].numElems !=  0) {
+    function removeFromRecentCreations(address owner, uint256 tokenId) internal {
+        if(ownerToRecentCreations[owner].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                if(CircularBuffer.read(ownerToRecentCreations[msg.sender], int8(i)) == tokenId) {
-                    CircularBuffer.erase(ownerToRecentCreations[msg.sender], int8(i));
+                if(CircularBuffer.read(ownerToRecentCreations[owner], int8(i)) == tokenId) {
+                    CircularBuffer.erase(ownerToRecentCreations[owner], int8(i));
                     break;
                 }
             }

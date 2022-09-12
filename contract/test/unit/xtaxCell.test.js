@@ -127,7 +127,7 @@ const { cells } = require('../data/cell/test_cells_1')
         it("transfers cells", async () => {
             let acc1 = accounts[0].address
             let acc2 = accounts[1].address
-            let owner;
+            let owner, nft, recentCells;
 
             await expect(
                 xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
@@ -136,6 +136,9 @@ const { cells } = require('../data/cell/test_cells_1')
 
             owner = await xtaxCell.ownerOf(1)
             expect(owner).to.equal(acc1)
+
+            nft = await xtaxCell.cellNFT(1)
+            expect(nft.owner).to.equal(acc1)
 
             await expect(
                 xtaxCell.transferFrom(acc1, acc2, 1)
@@ -146,6 +149,33 @@ const { cells } = require('../data/cell/test_cells_1')
 
             owner = await xtaxCell.ownerOf(1)
             expect(owner).to.equal(acc2)
+
+            nft = await xtaxCell.cellNFT(1)
+            expect(nft.owner).to.equal(acc2)
+
+            recentCells = await xtaxCell.recentCellsForAddress(accounts[0].address);
+            expect(recentCells[0].owner).to.equal(ethers.constants.AddressZero)
+            expect(recentCells[0].cellMetadataCID).to.equal('')
+
+            recentCells = await xtaxCell.recentCellsForAddress(accounts[1].address);
+            expect(recentCells[0].owner).to.equal(acc2)
+            expect(recentCells[0].cellMetadataCID).to.equal(cells[0].cid)
+
+            await expect(
+                xtaxCell.connect(accounts[1])["safeTransferFrom(address,address,uint256)"](acc2, acc1, 1)
+            ).to.emit(xtaxCell, 'Transfer')
+            .withArgs(acc2, acc1, 1)
+            .to.emit(xtaxCell, 'TransferredCell')
+            .withArgs(acc2, acc1, 1, cells[0].cid)
+
+            await expect(
+                xtaxCell.connect(accounts[0])["safeTransferFrom(address,address,uint256,bytes)"](acc1, acc2, 1, [0,1,2,3])
+            ).to.emit(xtaxCell, 'Transfer')
+            .withArgs(acc1, acc2, 1)
+            .to.emit(xtaxCell, 'TransferredCell')
+            .withArgs(acc1, acc2, 1, cells[0].cid)
+
+
 
         })
     })
