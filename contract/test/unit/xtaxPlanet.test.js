@@ -115,5 +115,40 @@ const { developmentChains } = require("../../helper-hardhat-config")
             expect(recentTokens[1].planetMetadataCID).to.equal('')
 
         })
+
+        it("transfers planets", async () => {
+            let acc1 = accounts[0].address
+            let acc2 = accounts[1].address
+            let owner, nft, recentCells, balance;
+
+            const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+            const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
+            
+            await xtaxPlanet.addSigner(a);
+
+            await expect(
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+            ).to.emit(xtaxPlanet, 'MintedPlanet')
+            .withArgs(accounts[0].address, "1", "a");
+
+            await expect(
+                xtaxPlanet.transferFrom(acc1, acc2, 1)
+            ).to.emit(xtaxPlanet, 'Transfer')
+            .withArgs(acc1, acc2, 1)
+            .to.emit(xtaxPlanet, 'TransferredPlanet')
+            .withArgs(acc1, acc2, 1, "a")
+
+            owner = await xtaxPlanet.ownerOf(1)
+            expect(owner).to.equal(acc2)
+
+            nft = await xtaxPlanet.planetNFT(1)
+            expect(nft.owner).to.equal(acc2)
+
+            recentPlanets = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
+            expect(recentPlanets[0].owner).to.equal(ethers.constants.AddressZero)
+            expect(recentPlanets[0].planetMetadataCID).to.equal('')
+
+
+        })
     });
 });

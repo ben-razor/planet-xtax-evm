@@ -127,7 +127,7 @@ const { cells } = require('../data/cell/test_cells_1')
         it("transfers cells", async () => {
             let acc1 = accounts[0].address
             let acc2 = accounts[1].address
-            let owner, nft, recentCells;
+            let owner, nft, recentCells, balance;
 
             await expect(
                 xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'))
@@ -175,7 +175,11 @@ const { cells } = require('../data/cell/test_cells_1')
             .to.emit(xtaxCell, 'TransferredCell')
             .withArgs(acc1, acc2, 1, cells[0].cid)
 
+            balance = await xtaxCell.balanceOf(acc1)
+            expect(balance).to.equal("0")
 
+            balance = await xtaxCell.balanceOf(acc2)
+            expect(balance).to.equal("1")
 
         })
     })
