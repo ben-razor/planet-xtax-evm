@@ -72,57 +72,25 @@ const { cells } = require('../data/cell/test_cells_1')
             
             expect(recentCells[0].cellMetadataCID).to.equal(cells[8].msg)
             expect(recentCells[7].cellMetadataCID).to.equal(cells[1].msg)
-
-
-            /*
-            let owner = await xtaxCell.ownerOf(1);
-            expect(owner).to.equal(accounts[0].address)
-
-            await expect(
-                xtaxCell.ownerOf(2)
-            ).to.be.revertedWith('ERC721: owner query for nonexistent token')
-
-            let cellNFT= await xtaxCell.cellNFT(1);
-            expect(cellNFT.owner).to.equal(accounts[0].address)
-            expect(cellNFT.position).to.equal(VALID_POSITION.join(','))
-            expect(cellNFT.cellMetadataCID).to.equal("a")
-            expect(cellNFT.cellStructureCID).to.equal("b")
-
-            let tokenURI = await xtaxCell.tokenURI(1)
-            assert.equal(tokenURI, 'ipfs://' + "a")
-            let tokenCounter = await xtaxCell.getTokenCounter()
-            assert.equal(tokenCounter.toString(), "1")
-
-            let recentTokens = await xtaxCell.recentTokenIdsForAddress(accounts[0].address);
-            expect(recentTokens[0]).to.equal(1)
-            expect(recentTokens).to.have.length(8);
-
-            // Minting cell in same location by same user burns old and mints a new one
-            await expect(
-                xtaxCell.mintCell("a", "b", VALID_POSITION, s)
-            ).to.emit(xtaxCell, 'MintedCell')
-            .withArgs(accounts[0].address, "2", "a");
-
-            await expect(
-                xtaxCell.tokenURI(1)
-            ).to.be.revertedWith('ERC721Metadata: URI query for nonexistent token')
-
-            tokenCounter = await xtaxCell.getTokenCounter()
-            assert.equal(tokenCounter.toString(), "2")
-
-            cellNFT= await xtaxCell.cellNFT(2);
-            expect(cellNFT.owner).to.equal(accounts[0].address)
-            expect(cellNFT.position).to.equal(VALID_POSITION.join(','))
-            expect(cellNFT.cellMetadataCID).to.equal("a")
-            expect(cellNFT.cellStructureCID).to.equal("b")
-            
-            recentTokens = await xtaxCell.recentTokenIdsForAddress(accounts[0].address);
-            expect(recentTokens[0]).to.equal(2)
-            expect(recentTokens[1]).to.equal(0)
-            
-            */
         })
     });
+
+    describe("Payable", () => {
+        it("is payable", async () => {
+            let acc1 = accounts[0].address
+            let acc2 = accounts[1].address
+            let owner, nft, recentCells, balance;
+            mintValueLow = {value: ethers.utils.parseEther("0.05")}
+
+            await expect(
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'), mintValueLow)
+            ).to.be.revertedWith(`NotEnoughWei(${mintValue.value}, ${mintValueLow.value})`)
+
+            await expect(
+                xtaxCell.ownerOf(1)
+            ).to.be.revertedWith('ERC721: owner query for nonexistent token')
+        })
+    })
 
     describe("Transfer", () => {
         it("transfers cells", async () => {
