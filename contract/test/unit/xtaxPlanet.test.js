@@ -7,13 +7,14 @@ const { developmentChains } = require("../../helper-hardhat-config")
 !developmentChains.includes(network.name)
 ? describe.skip
 : describe("XtaXPlanet Unit Tests", function () {
-    let xtaxPlanet, deployer
+    let xtaxPlanet, deployer, mintValue
 
     beforeEach(async () => {
         accounts = await ethers.getSigners()
         deployer = accounts[0]
         await deployments.fixture(["xtaxplanet"])
         xtaxPlanet = await ethers.getContract("XtaxPlanet")
+        mintValue = {value: ethers.utils.parseEther("1")}
     })
 
     describe("Construtor", () => {
@@ -55,17 +56,17 @@ const { developmentChains } = require("../../helper-hardhat-config")
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxPlanet.addSigner(a);
 
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos)
+                xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos, mintValue)
             ).to.be.revertedWith('IncorrectLevel("1", "0")')
 
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "1", "a");
 
@@ -93,7 +94,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
             // Minting planet in same location by same user burns old and mints a new one
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "2", "a");
 
@@ -116,6 +117,66 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
         })
 
+        describe("Payable", () => {
+            it("is payable", async () => {
+                let acc1 = accounts[0].address
+                let acc2 = accounts[1].address
+                let owner, nft, recentPlanets, balance
+                let acc1Balance, acc2Balance, contractBalance
+                const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+                const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
+                await xtaxPlanet.addSigner(a)
+                
+                mintValueLow = {value: ethers.utils.parseEther("0.5")}
+    
+                contractBalance = await ethers.provider.getBalance(xtaxPlanet.address);
+                expect(contractBalance).to.equal('0')
+    
+                acc2Balance = await ethers.provider.getBalance(accounts[2].address);
+                expect(acc2Balance).to.equal(ethers.utils.parseEther("10000"))
+    
+                await expect(
+                    xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValueLow)
+                ).to.be.revertedWith(`NotEnoughWei(${mintValue.value}, ${mintValueLow.value})`)
+    
+                await expect(
+                    xtaxPlanet.ownerOf(1)
+                ).to.be.revertedWith('ERC721: owner query for nonexistent token')
+    
+                await expect(
+                    xtaxPlanet.connect(accounts[1]).setMintPrice(mintValueLow.value)
+                ).to.be.revertedWith('Ownable: caller is not the owner')
+    
+                await expect(
+                    xtaxPlanet.setMintPrice(mintValueLow.value)
+                ).to.not.be.reverted
+    
+                await expect(
+                    xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValueLow)
+                ).to.not.be.reverted
+    
+                /*
+                contractBalance = await ethers.provider.getBalance(xtaxPlanet.address);
+                expect(contractBalance).to.equal(mintValueLow.value)
+    
+                await expect(
+                    xtaxPlanet.connect(accounts[1]).withdraw(accounts[1].address, mintValueLow.value)
+                ).to.be.revertedWith('Ownable: caller is not the owner')
+    
+                await expect(
+                    xtaxPlanet.withdraw(accounts[2].address, mintValueLow.value)
+                ).to.not.be.reverted
+    
+                contractBalance = await ethers.provider.getBalance(xtaxPlanet.address);
+                expect(contractBalance).to.equal("0")
+    
+                acc2Balance = await ethers.provider.getBalance(accounts[2].address);
+                expect(acc2Balance).to.equal(ethers.utils.parseEther("10000.5"))
+                */
+    
+            })
+        })
+
         it("transfers planets", async () => {
             let acc1 = accounts[0].address
             let acc2 = accounts[1].address
@@ -127,7 +188,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             await xtaxPlanet.addSigner(a);
 
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "1", "a");
 

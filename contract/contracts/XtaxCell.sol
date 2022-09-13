@@ -39,8 +39,8 @@ contract XtaxCell is ERC721, Ownable {
     );
 
     uint8 public constant NUM_RECENT_CREATIONS = 8;
-    string public constant LEVEL = "0";
-    uint public s_mintPrice = 0.1 ether;
+
+    uint public mintPrice = 0.1 ether;
 
     uint256 private s_tokenCounter;
 
@@ -87,7 +87,7 @@ contract XtaxCell is ERC721, Ownable {
     }
 
     function setMintPrice(uint amount) public onlyOwner {
-        s_mintPrice = amount;
+        mintPrice = amount;
     }
 
     function mintCell(
@@ -95,8 +95,8 @@ contract XtaxCell is ERC721, Ownable {
         bytes memory signature
     ) public payable {
 
-        if(msg.value < s_mintPrice) {
-            revert NotEnoughWei(s_mintPrice, msg.value);
+        if(msg.value < mintPrice) {
+            revert NotEnoughWei(mintPrice, msg.value);
         }
 
         if(!verify(cellMetadataCID, signature)) {

@@ -14,6 +14,7 @@ error PlanetNotFound();
 error NotOwnerOfToken();
 error NotOwnerOfPosition();
 error NotOwnerOfPlanetStructure();
+error NotEnoughWei(uint expected, uint actual);
 
 contract XtaxPlanet is ERC721, Ownable {
     using Strings for string;
@@ -39,6 +40,8 @@ contract XtaxPlanet is ERC721, Ownable {
 
     uint8 public constant NUM_RECENT_CREATIONS = 8;
     string public constant LEVEL = "0";
+
+    uint public mintPrice = 1 ether;
 
     uint256 private s_tokenCounter;
 
@@ -98,12 +101,24 @@ contract XtaxPlanet is ERC721, Ownable {
         return s_tokenCounter;
     }
 
+    function withdraw(address payable to, uint amount) public onlyOwner {
+        to.transfer(amount);
+    }
+
+    function setMintPrice(uint amount) public onlyOwner {
+        mintPrice = amount;
+    }
+
     function mintPlanet(
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
         string[] calldata position,
         bytes memory signature
-    ) public {
+    ) public payable {
+
+        if(msg.value < mintPrice) {
+            revert NotEnoughWei(mintPrice, msg.value);
+        }
 
         // If trying to mint on wrong level (vertical height not available on this blockchain)
         if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
