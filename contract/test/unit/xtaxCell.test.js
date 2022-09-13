@@ -79,8 +79,16 @@ const { cells } = require('../data/cell/test_cells_1')
         it("is payable", async () => {
             let acc1 = accounts[0].address
             let acc2 = accounts[1].address
-            let owner, nft, recentCells, balance;
+            let owner, nft, recentCells, balance
+            let acc1Balance, acc2Balance, contractBalance
+
             mintValueLow = {value: ethers.utils.parseEther("0.05")}
+
+            contractBalance = await ethers.provider.getBalance(xtaxCell.address);
+            expect(contractBalance).to.equal('0')
+
+            acc2Balance = await ethers.provider.getBalance(accounts[2].address);
+            expect(acc2Balance).to.equal(ethers.utils.parseEther("10000"))
 
             await expect(
                 xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'), mintValueLow)
@@ -89,6 +97,36 @@ const { cells } = require('../data/cell/test_cells_1')
             await expect(
                 xtaxCell.ownerOf(1)
             ).to.be.revertedWith('ERC721: owner query for nonexistent token')
+
+            await expect(
+                xtaxCell.connect(accounts[1]).setMintPrice(mintValueLow.value)
+            ).to.be.revertedWith('Ownable: caller is not the owner')
+
+            await expect(
+                xtaxCell.setMintPrice(mintValueLow.value)
+            ).to.not.be.reverted
+
+            await expect(
+                xtaxCell.mintCell(cells[0].msg, Buffer.from(cells[0].sigHex, 'hex'), mintValueLow)
+            ).to.not.be.reverted
+
+            contractBalance = await ethers.provider.getBalance(xtaxCell.address);
+            expect(contractBalance).to.equal(mintValueLow.value)
+
+            await expect(
+                xtaxCell.connect(accounts[1]).withdraw(accounts[1].address, mintValueLow.value)
+            ).to.be.revertedWith('Ownable: caller is not the owner')
+
+            await expect(
+                xtaxCell.withdraw(accounts[2].address, mintValueLow.value)
+            ).to.not.be.reverted
+
+            contractBalance = await ethers.provider.getBalance(xtaxCell.address);
+            expect(contractBalance).to.equal("0")
+
+            acc2Balance = await ethers.provider.getBalance(accounts[2].address);
+            expect(acc2Balance).to.equal(ethers.utils.parseEther("10000.05"))
+
         })
     })
 
