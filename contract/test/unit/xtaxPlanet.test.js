@@ -46,24 +46,26 @@ const { developmentChains } = require("../../helper-hardhat-config")
         })
     })
 
-    const VALID_POSITION= ["0", "0", "0"]
+    const VALID_POSITION= ["0", "42", "0"]
+    const VALID_LEVEL = VALID_POSITION[1].toString()
     const INVALID_POSITION= ["0", "1", "0"]
 
     describe("Planet", () => {
         it("mints planets", async function () {
-            const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+            const sInvalid = Buffer.from('6389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
+            const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
             const sInvalidPos = Buffer.from('2ae6b3f2b94274acb43bad3f5a5dc6d10f040aaed76e6a19e5fd68dac7dbac5968f24920cfca0eeb75ba42cb9be9284d7f56002d9b926e516205861f916b73691b', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, sInvalid, mintValue)
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxPlanet.addSigner(a);
 
             await expect(
                 xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos, mintValue)
-            ).to.be.revertedWith('IncorrectLevel("1", "0")')
+            ).to.be.revertedWith(`IncorrectLevel("1", "${VALID_LEVEL}")`)
 
             await expect(
                 xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
@@ -123,7 +125,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
                 let acc2 = accounts[1].address
                 let owner, nft, recentPlanets, balance
                 let acc1Balance, acc2Balance, contractBalance
-                const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+                const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
                 const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
                 await xtaxPlanet.addSigner(a)
                 
@@ -182,7 +184,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
             let acc2 = accounts[1].address
             let owner, nft, recentCells, balance;
 
-            const s = Buffer.from('34b02f92030c8c1c4dc9bf682c8f86076bdf596cc56881884b313f04a586aaa61a057e623491378728c0bb286bc9ed95acdbee9cc8b16b5842ef25254e6194681c', 'hex')
+            const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await xtaxPlanet.addSigner(a);

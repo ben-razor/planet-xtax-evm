@@ -39,7 +39,7 @@ contract XtaxPlanet is ERC721, Ownable {
     );
 
     uint8 public constant NUM_RECENT_CREATIONS = 8;
-    string public constant LEVEL = "0";
+    string public constant LEVEL = "42";
 
     uint public mintPrice = 1 ether;
 

@@ -20,12 +20,29 @@ module.exports = {
             chainId: 31337,
             // gasPrice: 130000000000,
         },
+        evmos: {
+            url: `https://eth.bd.evmos.org:8545`,
+            accounts: [PRIVATE_KEY],
+            chainId: 9001,
+            blockConfirmations: 6,
+        },
+        tevmos: {
+            url: `https://eth.bd.evmos.dev:8545`,
+            accounts: [PRIVATE_KEY],
+            chainId: 9000,
+            blockConfirmations: 6,
+        },
         rinkeby: {
             url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY_RINKEBY}`,
             accounts: [PRIVATE_KEY],
             chainId: 4,
             blockConfirmations: 6,
         },
+        mumbai: {
+            chainId: 80001,
+            url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_MUMBAI}`,
+            accounts: [`${process.env.ACCOUNT}`]
+        }
     },
     solidity: {
         compilers: [
@@ -45,6 +62,10 @@ module.exports = {
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
+        ropsten: process.env.ETHERSCAN_API_KEY,
+        rinkeby: process.env.ETHERSCAN_API_KEY,
+        polygon: process.env.POLYGONSCAN_API_KEY,
+        polygonMumbai: process.env.POLYGONSCAN_API_KEY
     },
     gasReporter: {
         enabled: true,
