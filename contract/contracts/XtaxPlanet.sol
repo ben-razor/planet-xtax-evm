@@ -122,7 +122,7 @@ contract XtaxPlanet is ERC721, Ownable {
 
         // If trying to mint on wrong level (vertical height not available on this blockchain)
         if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
-            revert IncorrectLevel(position[1], LEVEL);
+            revert IncorrectLevel(LEVEL, position[1]);
         }
 
         string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));

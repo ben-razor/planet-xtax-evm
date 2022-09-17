@@ -3,6 +3,7 @@
 const { assert, expect } = require("chai")
 const { network, deployments, ethers } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
+const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_1')
 
 !developmentChains.includes(network.name)
 ? describe.skip
@@ -65,7 +66,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
 
             await expect(
                 xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos, mintValue)
-            ).to.be.revertedWith(`IncorrectLevel("1", "${VALID_LEVEL}")`)
+            ).to.be.revertedWith(`IncorrectLevel("${VALID_LEVEL}", "1")`)
 
             await expect(
                 xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
@@ -212,6 +213,26 @@ const { developmentChains } = require("../../helper-hardhat-config")
             expect(recentPlanets[0].planetMetadataCID).to.equal('')
 
 
+        })
+
+        it('mints real planets', async () => {
+            const mintValue = {value: ethers.utils.parseEther("1")}
+        
+            for(let p of defaultPlanets) {
+                let planet = planets[p]
+                let planetInfo = planet.msg.split(':')
+        
+                let planetMetadataCID = planetInfo[0]
+                let planetStructureCID = planetInfo[1]
+                let position = planetInfo[2].split(',')
+        
+                await expect(
+                    xtaxPlanet.mintPlanet(
+                        planetMetadataCID, planetStructureCID, position, 
+                        Buffer.from(planet.sigHex, 'hex'), mintValue
+                    )
+                ).to.emit(xtaxPlanet, 'MintedPlanet')
+            }
         })
     });
 });
