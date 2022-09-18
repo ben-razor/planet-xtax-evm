@@ -31,7 +31,7 @@ The important thing is you got there in the end. Now we present you with this ap
 
 ### Space
 
-![Universe Structure](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/structure-simple-small-1.png?token=GHSAT0AAAAAABSXBPNIOJQSSOBTYPYLJSVWYZHULZA)
+![Universe Structure](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/structure-simple-small-1.png)
 
 Each blockchain forms a slice of space in the XZ plane.  
 
@@ -68,7 +68,7 @@ Clicking a planet takes you straight to that galaxy.
 
 As planets and cells are created on 
 
-![System Architecture](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/mint-overview.png?token=GHSAT0AAAAAABSXBPNIXOFSNUX2DDQJGWLMYZHT7WA)
+![System Architecture](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/mint-overview.png)
 
 ## Contracts
 
