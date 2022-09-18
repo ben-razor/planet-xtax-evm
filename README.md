@@ -19,15 +19,6 @@ and imprison them in a cold, dark database...
 
 It's time to build a new world
 
-## Tools and Platforms
-
-* Planet XtaX is designed to run on modern desktop web browsers
-* In this version, MetaMask is needed to connect to Evmos
-
-## Architecture
-
-As planets and cells are created on 
-
 ## Universe Construction Apparatus
 
 Our civilization of XtaXians send this gift of a Universe Construction Apparatus to reward you for discovering blockchain.
@@ -40,11 +31,13 @@ The important thing is you got there in the end. Now we present you with this ap
 
 ### Space
 
+![Universe Structure](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/structure-simple-small-1.png?token=GHSAT0AAAAAABSXBPNIOJQSSOBTYPYLJSVWYZHULZA)
+
 Each blockchain forms a slice of space in the XZ plane.  
 
 Different blockchains (or different contracts on the the same chain) can be added at different **Levels** in the Y plane.  
 
-Wormholes will be used to transmit planets between **Levels** using IBC (Inter Blockchain Communication) protocols.
+In future, wormholes will be used to transmit planets between **Levels** using IBC (Inter Blockchain Communication) protocols.
 
 There is no center and there are multiple centers. The center will change over time.
 
@@ -66,7 +59,22 @@ Planets in the explorer act as outposts to allow instant travel between galaxies
 
 Clicking a planet takes you straight to that galaxy.
 
-## 
+## Tools and Platforms
+
+* Planet XtaX is designed to run on modern desktop web browsers
+* In this version, MetaMask is needed to connect to Evmos
+
+## Architecture
+
+As planets and cells are created on 
+
+![System Architecture](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/mint-overview.png?token=GHSAT0AAAAAABSXBPNIXOFSNUX2DDQJGWLMYZHT7WA)
+
+## Contracts
 
 Planet Contract (Evmos Testnet) 0x43003fD9B4d954cFB37f136aC05871DbFF42363C
 Cell Contract (Evmos Testnet)   0x3b21Fdbba3380A1A2459BdFab13166117a460E3d
+
+## Source Code
+
+The source for the Evmos contracts can be found at https://github.com/ben-razor/planet-xtax-evm
