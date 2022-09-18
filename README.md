@@ -2,7 +2,13 @@
 
 Planet XtaX is a Universe Construction Apparatus.  
 
-Contracts for Planet XtaX on EVM compatible chains.
+This repository contains contracts for storing cells and planets as NFTs on EVM compatible chains.
+
+Part of a submission for the Evmos Momentum Hackathon.
+
+Demo App: https://planet-xtax.web.app/
+
+Demo Video: https://youtu.be/AINOyA30sX8Try
 
 # About Planet XtaX 
 
@@ -59,3 +65,8 @@ When a new planet is created it can be seached in the explorer.
 Planets in the explorer act as outposts to allow instant travel between galaxies.
 
 Clicking a planet takes you straight to that galaxy.
+
+## 
+
+Planet Contract (Evmos Testnet) 0x43003fD9B4d954cFB37f136aC05871DbFF42363C
+Cell Contract (Evmos Testnet)   0x3b21Fdbba3380A1A2459BdFab13166117a460E3d
