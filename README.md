@@ -10,20 +10,11 @@ A submission for the Evmos Momentum Hackathon.
 
 This repository contains contracts for storing cells and planets as NFTs on Evmos.
 
-# About Planet XtaX 
-
-Are you tired of Earth?  
-
-When megacorps steal your dreams,  
-and imprison them in a cold, dark database...  
-
-It's time to build a new world
-
 ## The Elements
 
 #### Cells
 
-* A cube with characteristics defined by a schema
+* A cell is a cube with characteristics defined by a schema
 * Information such as name and description can be stored
 * Stored as NFTs on Evmos
 * There can only be one owner of a cell with a given set of characteristics
@@ -50,7 +41,8 @@ It's time to build a new world
 
 * The level is the height of a slice of galaxies
 * Different networks or 3D configurations will be stored at different levels
-* Evmos Testnet is at Level 42 of the XtaX universe
+* Evmos Testnet is the first network
+* It occupies Level 42 of the XtaX universe
 
 ## Spacetime Structure
 
