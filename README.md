@@ -16,7 +16,7 @@ This repository contains contracts for storing cells and planets as NFTs on Evmo
 
 * A cell is a cube with characteristics defined by a schema
 * Information such as name and description can be stored
-* Stored as NFTs on Evmos
+* Cells are stored as NFTs on Evmos
 * There can only be one owner of a cell with a given set of characteristics
 * Cell NFTs can be transferred and burned
 
