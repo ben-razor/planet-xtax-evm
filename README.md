@@ -8,7 +8,7 @@ Part of a submission for the Evmos Momentum Hackathon.
 
 Demo App: https://planet-xtax.web.app/
 
-Demo Video: https://youtu.be/AINOyA30sX8Try
+Demo Video: https://youtu.be/yhMh5ZXTop0
 
 # About Planet XtaX 
 
