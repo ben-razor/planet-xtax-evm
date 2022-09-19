@@ -50,7 +50,7 @@ This repository contains contracts for storing cells and planets as NFTs on Evmo
 
 ![Universe Structure](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/structure-simple-small-1.png)
 
-Different networks (or different contracts on the the same chain) can be added at different **Levels** in the Y plane.  
+Different networks will be added at different **Levels** in the Y plane.  
 
 In future, wormholes will be used to transmit planets between **Levels** using IBC (Inter Blockchain Communication) protocols.
 
