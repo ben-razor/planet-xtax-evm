@@ -1,14 +1,14 @@
 # Planet XtaX EVM
 
-Planet XtaX is a Universe Construction Apparatus.  
-
-This repository contains contracts for storing cells and planets as NFTs on EVM compatible chains.
-
-Part of a submission for the Evmos Momentum Hackathon.
+Planet XtaX is a **Universe Construction Apparatus** on [Evmos Blockchain](http://evmos.org).   
 
 Demo App: https://planet-xtax.web.app/
 
 Demo Video: https://youtu.be/yhMh5ZXTop0
+
+A submission for the Evmos Momentum Hackathon.
+
+This repository contains contracts for storing cells and planets as NFTs on Evmos.
 
 # About Planet XtaX 
 
@@ -19,23 +19,46 @@ and imprison them in a cold, dark database...
 
 It's time to build a new world
 
-## Universe Construction Apparatus
+## The Elements
 
-Our civilization of XtaXians send this gift of a Universe Construction Apparatus to reward you for discovering blockchain.
+#### Cells
 
-How did it take you so long? Busy indulging your petty squabbles we think!
+* A cube with characteristics defined by a schema
+* Information such as name and description can be stored
+* Stored as NFTs on Evmos
+* There can only be one owner of a cell with a given set of characteristics
+* Cell NFTs can be transferred and burned
 
-The important thing is you got there in the end. Now we present you with this apparatus for your people to use to build planets in the Evmos universe!
+#### Seed Planets
 
-## Spacetime Fabric
+* A seed planet is a single cell
+* When a seed planet is built upon. It becomes a real planet
+
+#### Planets
+
+* Planets are formed by joining cells together in 3D space
+* There can only be one owner of a cell with a given structure
+* Once a planet is owned. Only the owner can build at that location
+* The owner of a planet can warp the planet to another location
+* Planet NFTs can be transferred and burned
+
+#### Galaxies
+
+* A galaxy is a square region that contains 25 planets
+
+#### Levels
+
+* The level is the height of a slice of galaxies
+* Different networks or 3D configurations will be stored at different levels
+* Evmos Testnet is at Level 42 of the XtaX universe
+
+## Spacetime Structure
 
 ### Space
 
 ![Universe Structure](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/structure-simple-small-1.png)
 
-Each blockchain forms a slice of space in the XZ plane.  
-
-Different blockchains (or different contracts on the the same chain) can be added at different **Levels** in the Y plane.  
+Different networks (or different contracts on the the same chain) can be added at different **Levels** in the Y plane.  
 
 In future, wormholes will be used to transmit planets between **Levels** using IBC (Inter Blockchain Communication) protocols.
 
@@ -45,30 +68,53 @@ You must find your own center.
 
 ### Time
 
-The structure of planets is determined by the planet schemas active during a time period.  
+The structure of planets is determined by the planet schemas active during that time period.  
 
 Schemas will be added and removed across time leading to varied structures throughout space.  
 
 Planets created with short lasting schemas will have higher rarity.  
 
-## Explorer
+## Planet Explorer
 
-When a new planet is created it can be seached in the explorer.
+When a new planet is created it can be seached in the explorer.  
 
-Planets in the explorer act as outposts to allow instant travel between galaxies.
+Planets in the explorer act as outposts to allow instant travel between galaxies.  
 
-Clicking a planet takes you straight to that galaxy.
+Clicking a planet takes you straight to that galaxy.  
 
 ## Tools and Platforms
 
-* Planet XtaX is designed to run on modern desktop web browsers
-* In this version, MetaMask is needed to connect to Evmos
+* Planet XtaX runs on modern desktop web browsers
+* In this version, MetaMask is needed to connect to the Evmos blockchain
 
 ## Architecture
 
-As planets and cells are created on 
+As planets and cells are created in a client browser. A system is needed to verify the information before creating the NFT on Evmos.  
+
+Planet XtaX uses the following architecure to achieve this:
 
 ![System Architecture](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/mint-overview.png)
+
+## Properties
+
+* This version of Planet XtaX is an alpha version of the **Builder** component
+* As galaxies are built they create environments for games and creative tools to be created on
+
+* Evmos is an open blockchain. Anybody will be able to build applications on the created Galaxies
+* Evmos records ownership. 
+* Creators can be rewarded when their planets are interacted with in those applications
+
+Planet XtaX is a completely open system for everybody to interact with with minimum friction.  
+
+It is hoped that this removal of friction and barriers can allow big adoption of the XtaX Universe.
+
+## Future Development
+
+* Efficiency and stability improvements
+* User and security testing
+* Mainnet alpha release
+* Simple demo applications built upon universe
+* Many secret features!
 
 ## Contracts
 
