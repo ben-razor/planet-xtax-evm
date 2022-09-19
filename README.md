@@ -87,20 +87,30 @@ Planet XtaX uses the following architecure to achieve this:
 
 ![System Architecture](https://raw.githubusercontent.com/ben-razor/planet-xtax-evm/main/assets/images/infographic/mint-overview.png)
 
-## Evmos Properties
+## Adoption
 
-* Galaxies create environments for games and creative tools to be built upon
-
+* Created galaxies provide environments for games and creative tools to be built upon
 * Evmos is an open blockchain. Anybody will be able to build applications on the created Galaxies
 * Creators can be rewarded when their planets are interacted with in those applications
 
 Planet XtaX is a completely open system for everybody to interact with with minimum friction.  
 
-It is hoped that this removal of friction and barriers can allow big adoption of the XtaX Universe.
+It is hoped that this removal of friction and barriers will huge adoption of the XtaX Universe.
 
-* The number of possible planets and cells is near limitless. There will be many small transactions
+## Evmos Specific Properties
+
+### Interoperability
+
+* A team is working to enable IBC (Inter Blockchain Communication) from Evmos contracts
+* The Planet XtaX universe is designed to take advantage of this property
+* This ability to visually interact with IBC enabled blockchains will reveal the true power of IBC
+
+### Fee Sharing Model
+
+* The number of possible planets and cells is near limitless
+* There will be many small transactions
 * This compares to the few high value transactions of traditional NFT projects
-* This feature is ideal to take advange of the fee sharing model introduced by Evmos
+* This feature is ideal to take advantage of the fee sharing model introduced by Evmos
 
 ## Future Development
 
