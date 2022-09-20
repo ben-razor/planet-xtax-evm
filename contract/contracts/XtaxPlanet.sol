@@ -66,7 +66,7 @@ contract XtaxPlanet is ERC721, Ownable {
     /// @notice The standard NFT token counter
     uint256 private s_tokenCounter;
 
-    /// @notice A set of addresses that are valid signers of submitted planet info
+    /// @dev A set of addresses that are valid signers of submitted planet info
     mapping(address => bool) signers;
 
     /// @notice Stores the properties of owned planets
@@ -319,7 +319,7 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     /**
-     * @notice Internal method to transfer planet info between accounts
+     * @notice Internal method to transfer planet between accounts
      */
     function _transferPlanet(address from, address to, uint256 tokenId) internal {
         PlanetInfo storage info = tokenIdToInfo[tokenId];
