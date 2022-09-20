@@ -8,29 +8,45 @@ import "./CircularBuffer.sol";
 
 import "hardhat/console.sol";
 
+/// @notice Error for signature does not match supplied cell info
+/// @notice Error for public key is not a registered signer
 error VerifyFailed();
-error IncorrectLevel(string expected, string actual);
+
+/// @notice Error for no cell stored for a given id
 error CellNotFound();
+
+/// @notice Error for attempt to change cell for which token id is not owned by the sender
 error NotOwnerOfToken();
+
+/// @notice Error for attempt to change cell when account other than sender owns cell with those properties
 error NotOwnerOfCell();
+
+/// @notice Error for mint cell that is already owned
 error AlreadyOwnerOfCell();
+
+/// @notice Error for attempt to change planet with not enough value supplied
 error NotEnoughWei(uint expected, uint actual);
 
+/// @title NFT for a Cell in the Planet Xtax Universe
+/// @author Ben Razor
 contract XtaxCell is ERC721, Ownable {
     using Strings for string;
 
+    /// @notice Emit when cell minted
     event MintedCell(
         address indexed owner,
         uint256 indexed tokenId,
         string indexed cellMetadataCID
     );
 
+    /// @notice Emit when cell burned
     event BurnedCell(
         address indexed owner,
         uint256 indexed tokenId,
         string indexed cellMetadataCID
     );
 
+    /// @notice Emit when cell transferred 
     event TransferredCell(
         address indexed from,
         address indexed to,
@@ -38,30 +54,44 @@ contract XtaxCell is ERC721, Ownable {
         string cellMetadataCID
     );
 
-    uint8 public constant NUM_RECENT_CREATIONS = 8;
-
+    /// @notice Minimum value required to mint a cell 
     uint public mintPrice = 0.1 ether;
 
+    /// @notice The standard NFT token counter
     uint256 private s_tokenCounter;
 
+    /// @dev A set of addresses that are valid signers of submitted planet info
     mapping(address => bool) signers;
 
+    /// @notice Stores the properties of owned cells 
     struct CellInfo {
         address owner;
         string cellMetadataCID;
     }
 
+    /// @notice Lookup tokenId by metadataCID
     mapping(string => uint256) cellMetadataCIDToTokenId;
 
+
+    /// @notice Lookup Cell info by tokenId
     mapping(uint256 => CellInfo) tokenIdToInfo;
 
+    /// @notice A short buffer of recently created planets to allow simple searches
+    uint8 public constant NUM_RECENT_CREATIONS = 8;
+
+    /// @notice A circular buffer to store recently created planets
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
+    /**
+     * @dev Initialize the the contract with the name and tokenId
+     * @dev Add one signer that can be used to verify cell info signatures
+     */
     constructor(address signer) ERC721("Planet XtaX Cell", "XTAXC") {
         s_tokenCounter = 0;
         addSigner(signer);
     }
 
+    /// @notice Get the URI for a given tokenId
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if(tokenIdToInfo[tokenId].owner == address(0)) {
             revert CellNotFound();
@@ -70,26 +100,39 @@ contract XtaxCell is ERC721, Ownable {
         return string(abi.encodePacked("ipfs://", tokenIdToInfo[tokenId].cellMetadataCID));
     }
 
+    /// @notice Get the Cell info for a given tokenId
     function cellNFT(uint256 tokenId) public view returns (CellInfo memory) {
         return tokenIdToInfo[tokenId];
     }
 
+    /// @notice Get the Cell info for metadata CID
     function cellMetadataCIDToCellNFT(string calldata cellMetadataCID) public view returns (CellInfo memory) {
         return tokenIdToInfo[cellMetadataCIDToTokenId[cellMetadataCID]];
     }
 
+    /// @notice Get the current number of tokens created
     function getTokenCounter() public view returns (uint256) {
         return s_tokenCounter;
     }
 
+    /// @dev Withdraw value stored in this contract to an address
+    /// @dev Only the OWNER of the contract should be able to call this method
     function withdraw(address payable to, uint amount) public onlyOwner {
         to.transfer(amount);
     }
 
+    /// @dev Change the minimum price to mint a planet
+    /// @dev Only the OWNER of the contract should be able to call this method
     function setMintPrice(uint amount) public onlyOwner {
         mintPrice = amount;
     }
 
+    /**
+     * @notice Mint a cell with given CID
+     * @notice Value of mintPrice must be provided 
+     * @param cellMetadataCID Must be not owned, or owned by the sender
+     * @param signature The cellMetadataCID must be signed by a signer registered by this contract
+     */
     function mintCell(
         string calldata cellMetadataCID, 
         bytes memory signature
@@ -117,6 +160,10 @@ contract XtaxCell is ERC721, Ownable {
         addCell(cellMetadataCID);
     }
 
+    /**
+     * @notice Burn the cell with a given cellMetadataCID
+     * @notice Only owner may burn cell 
+     */
     function burnCell(string calldata cellMetadataCID) public {
         uint256 tokenId = cellMetadataCIDToTokenId[cellMetadataCID];
         
@@ -133,6 +180,9 @@ contract XtaxCell is ERC721, Ownable {
         removeCell(info.cellMetadataCID, tokenId);
     }
 
+    /**
+     * @dev Internal method to burn cell and remove cell specific data
+     */
     function removeCell(string memory cellMetadataCID, uint256 tokenId) internal {
         _burn(tokenId);
 
@@ -144,6 +194,9 @@ contract XtaxCell is ERC721, Ownable {
         emit BurnedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
+    /*
+     * Internal method to mint cell and store cell specific data
+     */
     function addCell(string memory cellMetadataCID) internal {
 
         s_tokenCounter = s_tokenCounter + 1;
@@ -158,21 +211,33 @@ contract XtaxCell is ERC721, Ownable {
         emit MintedCell(msg.sender, s_tokenCounter, cellMetadataCID);
     }
 
+    /**
+     * @notice Override of NFT transferFrom method
+     */
     function transferFrom(address from, address to, uint256 tokenId) public override {
         super.transferFrom(from, to, tokenId);
         _transferCell(from, to, tokenId);
     }
 
+    /**
+     * @notice Override of NFT safeTransferFrom method
+     */
     function safeTransferFrom(address from, address to, uint256 tokenId) public override {
         super.safeTransferFrom(from, to, tokenId);
         _transferCell(from, to, tokenId);
     }
 
+    /**
+     * @notice Override of NFT safeTransferFrom with data method
+     */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
         super.safeTransferFrom(from, to, tokenId, data);
         _transferCell(from, to, tokenId);
     }
 
+    /**
+     * @notice Internal method to transfer cell between accounts
+     */
     function _transferCell(address from, address to, uint256 tokenId) internal {
         CellInfo storage info = tokenIdToInfo[tokenId];
 
@@ -183,6 +248,9 @@ contract XtaxCell is ERC721, Ownable {
         emit TransferredCell(from, to, tokenId, info.cellMetadataCID);
     }
 
+    /**
+     * @notice Internal method add tokenId to short list of recently added cells 
+     */
     function addToRecentCreations(address owner, uint256 tokenId) internal {
         if(ownerToRecentCreations[owner].numElems == 0) {
             ownerToRecentCreations[owner] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
@@ -191,6 +259,9 @@ contract XtaxCell is ERC721, Ownable {
         CircularBuffer.insert(ownerToRecentCreations[owner], tokenId);
     }
 
+    /**
+     * @notice Internal method remove tokenId to short list of recently added cells 
+     */
     function removeFromRecentCreations(address owner, uint256 tokenId) internal {
         if(ownerToRecentCreations[owner].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
@@ -202,6 +273,9 @@ contract XtaxCell is ERC721, Ownable {
         }
     }
 
+    /**
+     * @notice Get a short list of recently added cell infos for this account
+     */
     function recentCellsForAddress(address owner) public view returns(CellInfo[] memory) {
         CellInfo[] memory cellInfos = new CellInfo[](NUM_RECENT_CREATIONS);
 
@@ -215,10 +289,18 @@ contract XtaxCell is ERC721, Ownable {
         return cellInfos;
     }
 
+    /**
+     * @dev Add a signer to validate submitted cell data
+     * @dev Only the OWNER of the contract should be able to call this method
+     */
     function addSigner(address signer) public onlyOwner {
         signers[signer] = true;
     }
 
+    /**
+     * @dev Verify cell CID data against a signature
+     * @return false if signature is not valid for data, or if recovered address is not a registered signer
+     */
     function verify(
         string calldata cellMetadataCID, 
         bytes memory signature
@@ -233,9 +315,11 @@ contract XtaxCell is ERC721, Ownable {
         return isSigner;
     }
 
+    /**
+     * @dev ECDSA recover helper method
+     */
     function recover(bytes32 hash, bytes memory signature) internal pure returns(address) {
         return ECDSA.recover(hash, signature);
     }
-
 }
 
