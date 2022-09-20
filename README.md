@@ -4,7 +4,7 @@ Planet XtaX is a **Universe Construction Apparatus** on [Evmos Blockchain](http:
 
 Demo App: https://planet-xtax.web.app/
 
-Demo Video: https://youtu.be/LoOoH-1YGE4
+Demo Video: https://youtu.be/msNaZwMizWI
 
 A submission for the Evmos Momentum Hackathon.
 
