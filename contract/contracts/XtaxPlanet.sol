@@ -8,29 +8,48 @@ import "./CircularBuffer.sol";
 
 import "hardhat/console.sol";
 
+/// @notice Error for signature does not match supplied planet info
+/// @notice Error for public key is not a registered signer
 error VerifyFailed();
+
+/// @notice Error for planet is minted a level (vertical height) not supported by this contract
 error IncorrectLevel(string expected, string actual);
+
+/// @notice Error for no planet stored for a given position or CID
 error PlanetNotFound();
+
+/// @notice Error for attempt to change planet for which token id is not owned by the sender
 error NotOwnerOfToken();
+
+/// @notice Error for attempt to change planet when account other than sender owns planet at that location
 error NotOwnerOfPosition();
+
+/// @notice Error for attempt to change planet when account other than sender owns planet with that structure
 error NotOwnerOfPlanetStructure();
+
+/// @notice Error for attempt to change planet with not enough value supplied
 error NotEnoughWei(uint expected, uint actual);
 
+/// @title NFT for a Planet in the Planet Xtax universe
+/// @author Ben Razor
 contract XtaxPlanet is ERC721, Ownable {
     using Strings for string;
 
+    /// @notice Emit when planet minted
     event MintedPlanet(
         address indexed owner,
         uint256 indexed tokenId,
         string indexed planetMetadataCID
     );
 
+    /// @notice Emit when planet burned 
     event BurnedPlanet(
         address indexed owner,
         uint256 indexed tokenId,
         string indexed planetMetadataCID
     );
 
+    /// @notice Emit when planet transferred
     event TransferredPlanet(
         address indexed from,
         address indexed to,
@@ -38,15 +57,19 @@ contract XtaxPlanet is ERC721, Ownable {
         string planetMetadataCID
     );
 
-    uint8 public constant NUM_RECENT_CREATIONS = 8;
+    /// @notice The level (vertical height) that planets can be created on on this blockchain
     string public constant LEVEL = "42";
 
+    /// @notice Minimum value required to mint a planet
     uint public mintPrice = 1 ether;
 
+    /// @notice The standard NFT token counter
     uint256 private s_tokenCounter;
 
+    /// @notice A set of addresses that are valid signers of submitted planet info
     mapping(address => bool) signers;
 
+    /// @notice Stores the properties of owned planets
     struct PlanetInfo {
         address owner;
         string position;
@@ -54,18 +77,34 @@ contract XtaxPlanet is ERC721, Ownable {
         string planetMetadataCID;
     }
 
+    /// @notice Lookup tokenId by position
     mapping(string => uint256) public positionToTokenId;
+
+    /// @notice Lookup tokenId by metadataCID
     mapping(string => uint256) public planetMetadataCIDToTokenId;
+
+    /// @notice Lookup tokenId by structureCID
     mapping(string => uint256) planetStructureCIDToTokenId;
 
+    /// @notice Lookup Planet info by tokenId
     mapping(uint256 => PlanetInfo) tokenIdToInfo;
+
+    /// @notice A short buffer of recently created planets to allow simple searches
+    uint8 public constant NUM_RECENT_CREATIONS = 8;
+
+    /// @notice A circular buffer to store recently created planets
     mapping(address => CircularBuffer.Buf) ownerToRecentCreations;
 
+    /**
+     * @dev Initialize the the contract with the name and tokenId
+     * @dev Add one signer that can be used to verify planet info signatures
+     */
     constructor(address signer) ERC721("Planet XtaX Planet", "XTAX") {
         s_tokenCounter = 0;
         addSigner(signer);
     }
 
+    /// @notice Get the URI for a given tokenId
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if(tokenIdToInfo[tokenId].owner == address(0)) {
             revert PlanetNotFound();
@@ -74,14 +113,17 @@ contract XtaxPlanet is ERC721, Ownable {
         return string(abi.encodePacked("ipfs://", tokenIdToInfo[tokenId].planetMetadataCID));
     }
 
+    /// @notice Get the Planet info for a given tokenId
     function planetNFT(uint256 tokenId) public view returns (PlanetInfo memory) {
         return tokenIdToInfo[tokenId];
     }
 
+    /// @notice Get the Planet info for a given position 
     function positionToPlanetNFT(string calldata position) public view returns (PlanetInfo memory) {
         return tokenIdToInfo[positionToTokenId[position]];
     }
 
+    /// @notice Get the Planet info for given positions
     function positionsToPlanetNFTS(string[] calldata positions) public view returns(PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](positions.length);
 
@@ -93,22 +135,36 @@ contract XtaxPlanet is ERC721, Ownable {
         return planetInfos;
     }
 
+    /// @notice Get the Planet info for metadata CID
     function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) public view returns (PlanetInfo memory) {
         return tokenIdToInfo[planetMetadataCIDToTokenId[planetMetadataCID]];
     }
 
+    /// @notice Get the current number of tokens created
     function getTokenCounter() public view returns (uint256) {
         return s_tokenCounter;
     }
 
+    /// @dev Withdraw value stored in this contract to an address
+    /// @dev Only the OWNER of the contract should be able to call this method
     function withdraw(address payable to, uint amount) public onlyOwner {
         to.transfer(amount);
     }
 
+    /// @dev Change the minimum price to mint a planet
+    /// @dev Only the OWNER of the contract should be able to call this method
     function setMintPrice(uint amount) public onlyOwner {
         mintPrice = amount;
     }
 
+    /**
+     * @notice Mint a planet with given CIDs at a position
+     * @notice Value of mintPrice must be provided 
+     * @notice Planet can only be minted on the valid level (vertical height) for this contract
+     * @param position Must be not owned, or owned by the sender
+     * @param planetStructureCID Must be not owned, or owned by the sender
+     * @param signature The data planetMetadataCID:planetStructureCID:x,y,z must be signed by a signer registered by this contract
+     */
     function mintPlanet(
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
@@ -183,6 +239,10 @@ contract XtaxPlanet is ERC721, Ownable {
         addPlanetToPosition(positionStr, planetStructureCID, planetMetadataCID);
     }
 
+    /**
+     * @notice Burn the planet with a given planetMetadataCID
+     * @notice Only owner may burn planet
+     */
     function burnPlanet(string calldata planetMetadataCID) public {
         uint256 tokenId = planetMetadataCIDToTokenId[planetMetadataCID];
         
@@ -199,6 +259,9 @@ contract XtaxPlanet is ERC721, Ownable {
         removePlanetFromPosition(info.position, info.planetStructureCID, info.planetMetadataCID, tokenId);
     }
 
+    /**
+     * @dev Internal method used remove a planet from a location if it has been burned or moved
+     */
     function removePlanetFromPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
         _burn(tokenId);
 
@@ -212,6 +275,9 @@ contract XtaxPlanet is ERC721, Ownable {
         emit BurnedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
+    /**
+     * @dev Internal method used add a planet to a position during minting
+     */
     function addPlanetToPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
 
         s_tokenCounter = s_tokenCounter + 1;
@@ -228,21 +294,33 @@ contract XtaxPlanet is ERC721, Ownable {
         emit MintedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
     }
 
+    /**
+     * @notice Override of NFT transferFrom method
+     */
     function transferFrom(address from, address to, uint256 tokenId) public override {
         super.transferFrom(from, to, tokenId);
         _transferPlanet(from, to, tokenId);
     }
 
+    /**
+     * @notice Override of NFT safeTransferFrom method
+     */
     function safeTransferFrom(address from, address to, uint256 tokenId) public override {
         super.safeTransferFrom(from, to, tokenId);
         _transferPlanet(from, to, tokenId);
     }
 
+    /**
+     * @notice Override of NFT safeTransferFrom with data method
+     */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
         super.safeTransferFrom(from, to, tokenId, data);
         _transferPlanet(from, to, tokenId);
     }
 
+    /**
+     * @notice Internal method to transfer planet info between accounts
+     */
     function _transferPlanet(address from, address to, uint256 tokenId) internal {
         PlanetInfo storage info = tokenIdToInfo[tokenId];
 
@@ -253,6 +331,9 @@ contract XtaxPlanet is ERC721, Ownable {
         emit TransferredPlanet(from, to, tokenId, info.planetMetadataCID);
     }
 
+    /**
+     * @notice Internal method add tokenId to short list of recently added planets
+     */
     function addToRecentCreations(address owner, uint256 tokenId) internal {
         if(ownerToRecentCreations[owner].numElems == 0) {
             ownerToRecentCreations[owner] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
@@ -261,6 +342,9 @@ contract XtaxPlanet is ERC721, Ownable {
         CircularBuffer.insert(ownerToRecentCreations[owner], tokenId);
     }
 
+    /**
+     * @notice Internal method remove tokenId to short list of recently added planets
+     */
     function removeFromRecentCreations(address owner, uint256 tokenId) internal {
         if(ownerToRecentCreations[owner].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
@@ -272,6 +356,9 @@ contract XtaxPlanet is ERC721, Ownable {
         }
     }
 
+    /**
+     * @notice Get a short list of recently added planet infos for this account
+     */
     function recentPlanetsForAddress(address owner) public view returns(PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](NUM_RECENT_CREATIONS);
 
@@ -285,10 +372,18 @@ contract XtaxPlanet is ERC721, Ownable {
         return planetInfos;
     }
 
+    /**
+     * @dev Add a signer to validate submitted planet data
+     * @dev Only the OWNER of the contract should be able to call this method
+     */
     function addSigner(address signer) public onlyOwner {
         signers[signer] = true;
     }
 
+    /**
+     * @dev Verify planet data against a signature
+     * @return false if signature is not valid for data, or if recovered address is not a registered signer
+     */
     function verify(
         string calldata planetMetadataCID, 
         string calldata planetStructureCID, 
@@ -305,9 +400,11 @@ contract XtaxPlanet is ERC721, Ownable {
         return isSigner;
     }
 
+    /**
+     * @dev ECDSA recover helper method
+     */
     function recover(bytes32 hash, bytes memory signature) public pure returns(address) {
         return ECDSA.recover(hash, signature);
     }
-
 }
 
