@@ -17,6 +17,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         waitConfirmations: network.config.blockConfirmations || 1,
     })
 
+    /*
     let xtaxPlanet = await ethers.getContract("XtaxPlanet")
     const name = await xtaxPlanet.name()
     console.log(JSON.stringify(['name', name]));
@@ -39,6 +40,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         const receipt = await tx.wait()
         console.log(receipt.logs)
     }
+    */
 
     // Verify the deployment
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {

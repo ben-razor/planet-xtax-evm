@@ -35,18 +35,6 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
         })
     })
 
-    describe("Verify Sig", () => {
-        it("verifies signatures", async function () {
-            const h = Buffer.from('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', 'hex')
-            const s = Buffer.from('6eecc89379e1f096c6cf1f195ae78c4cc483a4568c560ae7ade097ee83d34305650a3c224ba60bf04056ebb3520110578aeb80dfc93507f009a1b925ca81db29', 'hex')
-            const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
-
-            const res = await xtaxPlanet.recover(h, s)
-
-            assert.equal(res, a)
-        })
-    })
-
     const VALID_POSITION= ["0", "42", "0"]
     const VALID_LEVEL = VALID_POSITION[1].toString()
     const INVALID_POSITION= ["0", "1", "0"]
@@ -157,26 +145,6 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
                 await expect(
                     xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValueLow)
                 ).to.not.be.reverted
-    
-                /*
-                contractBalance = await ethers.provider.getBalance(xtaxPlanet.address);
-                expect(contractBalance).to.equal(mintValueLow.value)
-    
-                await expect(
-                    xtaxPlanet.connect(accounts[1]).withdraw(accounts[1].address, mintValueLow.value)
-                ).to.be.revertedWith('Ownable: caller is not the owner')
-    
-                await expect(
-                    xtaxPlanet.withdraw(accounts[2].address, mintValueLow.value)
-                ).to.not.be.reverted
-    
-                contractBalance = await ethers.provider.getBalance(xtaxPlanet.address);
-                expect(contractBalance).to.equal("0")
-    
-                acc2Balance = await ethers.provider.getBalance(accounts[2].address);
-                expect(acc2Balance).to.equal(ethers.utils.parseEther("10000.5"))
-                */
-    
             })
         })
 

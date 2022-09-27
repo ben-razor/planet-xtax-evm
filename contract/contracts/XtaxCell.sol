@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -58,7 +58,7 @@ contract XtaxCell is ERC721, Ownable {
     uint public mintPrice = 0.1 ether;
 
     /// @notice The standard NFT token counter
-    uint256 private s_tokenCounter;
+    uint256 private tokenCounter;
 
     /// @dev A set of addresses that are valid signers of submitted planet info
     mapping(address => bool) signers;
@@ -87,7 +87,7 @@ contract XtaxCell is ERC721, Ownable {
      * @dev Add one signer that can be used to verify cell info signatures
      */
     constructor(address signer) ERC721("Planet XtaX Cell", "XTAXC") {
-        s_tokenCounter = 0;
+        tokenCounter = 0;
         addSigner(signer);
     }
 
@@ -101,29 +101,31 @@ contract XtaxCell is ERC721, Ownable {
     }
 
     /// @notice Get the Cell info for a given tokenId
-    function cellNFT(uint256 tokenId) public view returns (CellInfo memory) {
+    function cellNFT(uint256 tokenId) external view returns (CellInfo memory) {
         return tokenIdToInfo[tokenId];
     }
 
     /// @notice Get the Cell info for metadata CID
-    function cellMetadataCIDToCellNFT(string calldata cellMetadataCID) public view returns (CellInfo memory) {
+    function cellMetadataCIDToCellNFT(string calldata cellMetadataCID) external view returns (CellInfo memory) {
         return tokenIdToInfo[cellMetadataCIDToTokenId[cellMetadataCID]];
     }
 
     /// @notice Get the current number of tokens created
-    function getTokenCounter() public view returns (uint256) {
-        return s_tokenCounter;
+    function getTokenCounter() external view returns (uint256) {
+        return tokenCounter;
     }
 
     /// @dev Withdraw value stored in this contract to an address
     /// @dev Only the OWNER of the contract should be able to call this method
-    function withdraw(address payable to, uint amount) public onlyOwner {
-        to.transfer(amount);
+    function withdraw(address payable to, uint amount) external onlyOwner {
+        if(amount > 0 && to != address(0)) {
+            to.transfer(amount);
+        }
     }
 
     /// @dev Change the minimum price to mint a planet
     /// @dev Only the OWNER of the contract should be able to call this method
-    function setMintPrice(uint amount) public onlyOwner {
+    function setMintPrice(uint amount) external onlyOwner {
         mintPrice = amount;
     }
 
@@ -136,7 +138,7 @@ contract XtaxCell is ERC721, Ownable {
     function mintCell(
         string calldata cellMetadataCID, 
         bytes memory signature
-    ) public payable {
+    ) external payable {
 
         if(msg.value < mintPrice) {
             revert NotEnoughWei(mintPrice, msg.value);
@@ -164,7 +166,7 @@ contract XtaxCell is ERC721, Ownable {
      * @notice Burn the cell with a given cellMetadataCID
      * @notice Only owner may burn cell 
      */
-    function burnCell(string calldata cellMetadataCID) public {
+    function burnCell(string calldata cellMetadataCID) external {
         uint256 tokenId = cellMetadataCIDToTokenId[cellMetadataCID];
         
         if(tokenId == 0) {
@@ -184,14 +186,14 @@ contract XtaxCell is ERC721, Ownable {
      * @dev Internal method to burn cell and remove cell specific data
      */
     function removeCell(string memory cellMetadataCID, uint256 tokenId) internal {
-        _burn(tokenId);
-
         delete tokenIdToInfo[tokenId];
         delete cellMetadataCIDToTokenId[cellMetadataCID];
 
         removeFromRecentCreations(msg.sender, tokenId);
 
-        emit BurnedCell(msg.sender, s_tokenCounter, cellMetadataCID);
+        emit BurnedCell(msg.sender, tokenCounter, cellMetadataCID);
+
+        _burn(tokenId);
     }
 
     /*
@@ -199,40 +201,40 @@ contract XtaxCell is ERC721, Ownable {
      */
     function addCell(string memory cellMetadataCID) internal {
 
-        s_tokenCounter = s_tokenCounter + 1;
-        _safeMint(msg.sender, s_tokenCounter);
+        tokenCounter = tokenCounter + 1;
+        tokenIdToInfo[tokenCounter] = CellInfo(msg.sender, cellMetadataCID);
 
-        tokenIdToInfo[s_tokenCounter] = CellInfo(msg.sender, cellMetadataCID);
+        cellMetadataCIDToTokenId[cellMetadataCID] = tokenCounter;
 
-        cellMetadataCIDToTokenId[cellMetadataCID] = s_tokenCounter;
+        addToRecentCreations(msg.sender, tokenCounter);
 
-        addToRecentCreations(msg.sender, s_tokenCounter);
+        emit MintedCell(msg.sender, tokenCounter, cellMetadataCID);
 
-        emit MintedCell(msg.sender, s_tokenCounter, cellMetadataCID);
+        _safeMint(msg.sender, tokenCounter);
     }
 
     /**
      * @notice Override of NFT transferFrom method
      */
     function transferFrom(address from, address to, uint256 tokenId) public override {
-        super.transferFrom(from, to, tokenId);
         _transferCell(from, to, tokenId);
+        super.transferFrom(from, to, tokenId);
     }
 
     /**
      * @notice Override of NFT safeTransferFrom method
      */
     function safeTransferFrom(address from, address to, uint256 tokenId) public override {
-        super.safeTransferFrom(from, to, tokenId);
         _transferCell(from, to, tokenId);
+        super.safeTransferFrom(from, to, tokenId);
     }
 
     /**
      * @notice Override of NFT safeTransferFrom with data method
      */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
-        super.safeTransferFrom(from, to, tokenId, data);
         _transferCell(from, to, tokenId);
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 
     /**
@@ -251,22 +253,22 @@ contract XtaxCell is ERC721, Ownable {
     /**
      * @notice Internal method add tokenId to short list of recently added cells 
      */
-    function addToRecentCreations(address owner, uint256 tokenId) internal {
-        if(ownerToRecentCreations[owner].numElems == 0) {
-            ownerToRecentCreations[owner] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+    function addToRecentCreations(address creator, uint256 tokenId) internal {
+        if(ownerToRecentCreations[creator].numElems == 0) {
+            ownerToRecentCreations[creator] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
         }
 
-        CircularBuffer.insert(ownerToRecentCreations[owner], tokenId);
+        CircularBuffer.insert(ownerToRecentCreations[creator], tokenId);
     }
 
     /**
      * @notice Internal method remove tokenId to short list of recently added cells 
      */
-    function removeFromRecentCreations(address owner, uint256 tokenId) internal {
-        if(ownerToRecentCreations[owner].numElems !=  0) {
+    function removeFromRecentCreations(address creator, uint256 tokenId) internal {
+        if(ownerToRecentCreations[creator].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                if(CircularBuffer.read(ownerToRecentCreations[owner], int8(i)) == tokenId) {
-                    CircularBuffer.erase(ownerToRecentCreations[owner], int8(i));
+                if(CircularBuffer.read(ownerToRecentCreations[creator], int8(i)) == tokenId) {
+                    CircularBuffer.erase(ownerToRecentCreations[creator], int8(i));
                     break;
                 }
             }
@@ -276,12 +278,12 @@ contract XtaxCell is ERC721, Ownable {
     /**
      * @notice Get a short list of recently added cell infos for this account
      */
-    function recentCellsForAddress(address owner) public view returns(CellInfo[] memory) {
+    function recentCellsForAddress(address addr) external view returns(CellInfo[] memory) {
         CellInfo[] memory cellInfos = new CellInfo[](NUM_RECENT_CREATIONS);
 
-        if(ownerToRecentCreations[owner].numElems !=  0) {
+        if(ownerToRecentCreations[addr].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], int8(i));
+                uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[addr], int8(i));
                 cellInfos[i] = tokenIdToInfo[tokenId];
             }
         }
@@ -304,7 +306,7 @@ contract XtaxCell is ERC721, Ownable {
     function verify(
         string calldata cellMetadataCID, 
         bytes memory signature
-    ) public view returns(bool) {
+    ) internal view returns(bool) {
 
         bytes32 msgHash = keccak256(abi.encodePacked(cellMetadataCID));
         bytes32 msgFull = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgHash));

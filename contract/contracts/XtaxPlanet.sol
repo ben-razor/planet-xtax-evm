@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -64,7 +64,7 @@ contract XtaxPlanet is ERC721, Ownable {
     uint public mintPrice = 1 ether;
 
     /// @notice The standard NFT token counter
-    uint256 private s_tokenCounter;
+    uint256 private tokenCounter;
 
     /// @dev A set of addresses that are valid signers of submitted planet info
     mapping(address => bool) signers;
@@ -100,7 +100,7 @@ contract XtaxPlanet is ERC721, Ownable {
      * @dev Add one signer that can be used to verify planet info signatures
      */
     constructor(address signer) ERC721("Planet XtaX Planet", "XTAX") {
-        s_tokenCounter = 0;
+        tokenCounter = 0;
         addSigner(signer);
     }
 
@@ -114,17 +114,17 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     /// @notice Get the Planet info for a given tokenId
-    function planetNFT(uint256 tokenId) public view returns (PlanetInfo memory) {
+    function planetNFT(uint256 tokenId) external view returns (PlanetInfo memory) {
         return tokenIdToInfo[tokenId];
     }
 
     /// @notice Get the Planet info for a given position 
-    function positionToPlanetNFT(string calldata position) public view returns (PlanetInfo memory) {
+    function positionToPlanetNFT(string calldata position) external view returns (PlanetInfo memory) {
         return tokenIdToInfo[positionToTokenId[position]];
     }
 
     /// @notice Get the Planet info for given positions
-    function positionsToPlanetNFTS(string[] calldata positions) public view returns(PlanetInfo[] memory) {
+    function positionsToPlanetNFTS(string[] calldata positions) external view returns(PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](positions.length);
 
         for(uint8 i = 0; i < positions.length; i++) {
@@ -136,24 +136,26 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     /// @notice Get the Planet info for metadata CID
-    function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) public view returns (PlanetInfo memory) {
+    function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) external view returns (PlanetInfo memory) {
         return tokenIdToInfo[planetMetadataCIDToTokenId[planetMetadataCID]];
     }
 
     /// @notice Get the current number of tokens created
-    function getTokenCounter() public view returns (uint256) {
-        return s_tokenCounter;
+    function getTokenCounter() external view returns (uint256) {
+        return tokenCounter;
     }
 
     /// @dev Withdraw value stored in this contract to an address
     /// @dev Only the OWNER of the contract should be able to call this method
-    function withdraw(address payable to, uint amount) public onlyOwner {
-        to.transfer(amount);
+    function withdraw(address payable to, uint amount) external onlyOwner {
+        if(amount > 0 && to != address(0)) {
+            to.transfer(amount);
+        }
     }
 
     /// @dev Change the minimum price to mint a planet
     /// @dev Only the OWNER of the contract should be able to call this method
-    function setMintPrice(uint amount) public onlyOwner {
+    function setMintPrice(uint amount) external onlyOwner {
         mintPrice = amount;
     }
 
@@ -170,7 +172,7 @@ contract XtaxPlanet is ERC721, Ownable {
         string calldata planetStructureCID, 
         string[] calldata position,
         bytes memory signature
-    ) public payable {
+    ) external payable {
 
         if(msg.value < mintPrice) {
             revert NotEnoughWei(mintPrice, msg.value);
@@ -243,7 +245,7 @@ contract XtaxPlanet is ERC721, Ownable {
      * @notice Burn the planet with a given planetMetadataCID
      * @notice Only owner may burn planet
      */
-    function burnPlanet(string calldata planetMetadataCID) public {
+    function burnPlanet(string calldata planetMetadataCID) external {
         uint256 tokenId = planetMetadataCIDToTokenId[planetMetadataCID];
         
         if(tokenId == 0) {
@@ -263,8 +265,6 @@ contract XtaxPlanet is ERC721, Ownable {
      * @dev Internal method used remove a planet from a location if it has been burned or moved
      */
     function removePlanetFromPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
-        _burn(tokenId);
-
         delete tokenIdToInfo[tokenId];
         delete positionToTokenId[position];
         delete planetStructureCIDToTokenId[planetStructureCID];
@@ -272,7 +272,9 @@ contract XtaxPlanet is ERC721, Ownable {
 
         removeFromRecentCreations(msg.sender, tokenId);
 
-        emit BurnedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
+        emit BurnedPlanet(msg.sender, tokenCounter, planetMetadataCID);
+
+        _burn(tokenId);
     }
 
     /**
@@ -280,42 +282,43 @@ contract XtaxPlanet is ERC721, Ownable {
      */
     function addPlanetToPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
 
-        s_tokenCounter = s_tokenCounter + 1;
-        _safeMint(msg.sender, s_tokenCounter);
+        tokenCounter = tokenCounter + 1;
 
-        tokenIdToInfo[s_tokenCounter] = PlanetInfo(msg.sender, position, planetStructureCID, planetMetadataCID);
+        tokenIdToInfo[tokenCounter] = PlanetInfo(msg.sender, position, planetStructureCID, planetMetadataCID);
 
-        positionToTokenId[position] = s_tokenCounter;
-        planetStructureCIDToTokenId[planetStructureCID] = s_tokenCounter;
-        planetMetadataCIDToTokenId[planetMetadataCID] = s_tokenCounter;
+        positionToTokenId[position] = tokenCounter;
+        planetStructureCIDToTokenId[planetStructureCID] = tokenCounter;
+        planetMetadataCIDToTokenId[planetMetadataCID] = tokenCounter;
 
-        addToRecentCreations(msg.sender, s_tokenCounter);
+        addToRecentCreations(msg.sender, tokenCounter);
 
-        emit MintedPlanet(msg.sender, s_tokenCounter, planetMetadataCID);
+        emit MintedPlanet(msg.sender, tokenCounter, planetMetadataCID);
+
+        _safeMint(msg.sender, tokenCounter);
     }
 
     /**
      * @notice Override of NFT transferFrom method
      */
     function transferFrom(address from, address to, uint256 tokenId) public override {
-        super.transferFrom(from, to, tokenId);
         _transferPlanet(from, to, tokenId);
+        super.transferFrom(from, to, tokenId);
     }
 
     /**
      * @notice Override of NFT safeTransferFrom method
      */
     function safeTransferFrom(address from, address to, uint256 tokenId) public override {
-        super.safeTransferFrom(from, to, tokenId);
         _transferPlanet(from, to, tokenId);
+        super.safeTransferFrom(from, to, tokenId);
     }
 
     /**
      * @notice Override of NFT safeTransferFrom with data method
      */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
-        super.safeTransferFrom(from, to, tokenId, data);
         _transferPlanet(from, to, tokenId);
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 
     /**
@@ -334,22 +337,22 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @notice Internal method add tokenId to short list of recently added planets
      */
-    function addToRecentCreations(address owner, uint256 tokenId) internal {
-        if(ownerToRecentCreations[owner].numElems == 0) {
-            ownerToRecentCreations[owner] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+    function addToRecentCreations(address creator, uint256 tokenId) internal {
+        if(ownerToRecentCreations[creator].numElems == 0) {
+            ownerToRecentCreations[creator] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
         }
 
-        CircularBuffer.insert(ownerToRecentCreations[owner], tokenId);
+        CircularBuffer.insert(ownerToRecentCreations[creator], tokenId);
     }
 
     /**
      * @notice Internal method remove tokenId to short list of recently added planets
      */
-    function removeFromRecentCreations(address owner, uint256 tokenId) internal {
-        if(ownerToRecentCreations[owner].numElems !=  0) {
+    function removeFromRecentCreations(address creator, uint256 tokenId) internal {
+        if(ownerToRecentCreations[creator].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                if(CircularBuffer.read(ownerToRecentCreations[owner], int8(i)) == tokenId) {
-                    CircularBuffer.erase(ownerToRecentCreations[owner], int8(i));
+                if(CircularBuffer.read(ownerToRecentCreations[creator], int8(i)) == tokenId) {
+                    CircularBuffer.erase(ownerToRecentCreations[creator], int8(i));
                     break;
                 }
             }
@@ -359,12 +362,12 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @notice Get a short list of recently added planet infos for this account
      */
-    function recentPlanetsForAddress(address owner) public view returns(PlanetInfo[] memory) {
+    function recentPlanetsForAddress(address addr) external view returns(PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](NUM_RECENT_CREATIONS);
 
-        if(ownerToRecentCreations[owner].numElems !=  0) {
+        if(ownerToRecentCreations[addr].numElems !=  0) {
             for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[owner], int8(i));
+                uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[addr], int8(i));
                 planetInfos[i] = tokenIdToInfo[tokenId];
             }
         }
@@ -403,7 +406,7 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @dev ECDSA recover helper method
      */
-    function recover(bytes32 hash, bytes memory signature) public pure returns(address) {
+    function recover(bytes32 hash, bytes memory signature) external pure returns(address) {
         return ECDSA.recover(hash, signature);
     }
 }
