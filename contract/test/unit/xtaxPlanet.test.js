@@ -44,29 +44,28 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
 
     describe("Planet", () => {
         it("mints planets", async function () {
-            const sInvalid = Buffer.from('6389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
-            const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
-            const sInvalidPos = Buffer.from('2ae6b3f2b94274acb43bad3f5a5dc6d10f040aaed76e6a19e5fd68dac7dbac5968f24920cfca0eeb75ba42cb9be9284d7f56002d9b926e516205861f916b73691b', 'hex')
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
-            
+            const tp3 = testPlanets.testPlanet3
+            const tp4 = testPlanets.testPlanet4
+            const sig = Buffer.from(tp4.sigHex, 'hex')
+            const sigInvalid = Buffer.from(tp3.sigHex, 'hex')
+            const cid = tp4.cid
+            const structureCID = tp4.msg.split(':')[1]
+            const pos = tp4.msg.split(':')[2].split(',')
+                
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION_PRICE_LOW, sInvalid, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, pos, sigInvalid, mintValue)
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxPlanet.addSigner(a);
 
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, INVALID_POSITION, sig, mintValue)
             ).to.be.revertedWith(`IncorrectLevel("${VALID_LEVEL}", "1")`)
-
-            const tp4 = testPlanets.testPlanet4
-            const sig = Buffer.from(tp4.sigHex, 'hex')
-            const cid = tp4.cid
-            const structureCID = tp4.msg.split(':')[1]
 
             console.log(accounts[0].address)
             await expect(
-                xtaxPlanet.mintPlanet(cid, structureCID, VALID_POSITION_PRICE_LOW, sig, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, pos, sig, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
             .withArgs(accounts[0].address, "1", cid);
 
@@ -119,13 +118,17 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
 
         describe("Payable", () => {
             it("is payable", async () => {
-                let acc1 = accounts[0].address
-                let acc2 = accounts[1].address
-                let owner, nft, recentPlanets, balance
-                let acc1Balance, acc2Balance, contractBalance
-                const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
+
                 const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
                 await xtaxPlanet.addSigner(a)
+
+                const tp3 = testPlanets.testPlanet3
+                const tp4 = testPlanets.testPlanet4
+                const sig = Buffer.from(tp4.sigHex, 'hex')
+                const sigInvalid = Buffer.from(tp3.sigHex, 'hex')
+                const cid = tp4.cid
+                const structureCID = tp4.msg.split(':')[1]
+                const pos = tp4.msg.split(':')[2].split(',')
                 
                 mintValueLow = {value: ethers.utils.parseEther("0.5")}
     
@@ -136,7 +139,7 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
                 expect(acc2Balance).to.equal(ethers.utils.parseEther("10000"))
     
                 await expect(
-                    xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValueLow)
+                    xtaxPlanet.mintPlanet(cid, structureCID, pos, sig, mintValueLow)
                 ).to.be.revertedWith(`NotEnoughWei(${mintValue.value}, ${mintValueLow.value})`)
     
                 await expect(
@@ -152,7 +155,7 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
                 ).to.not.be.reverted
     
                 await expect(
-                    xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValueLow)
+                    xtaxPlanet.mintPlanet(cid, structureCID, pos, sig, mintValueLow)
                 ).to.not.be.reverted
             })
         })
@@ -160,24 +163,28 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
         it("transfers planets", async () => {
             let acc1 = accounts[0].address
             let acc2 = accounts[1].address
-            let owner, nft, recentCells, balance;
+            let owner, nft
 
-            const s = Buffer.from('5389be768a57c34066221d4231e779acdd0365ab7b5ad5e62cdb959dda5943ba336977189acc806bb928ac6b20c47ecd9e12566fccde11473900346e1fc173031c', 'hex')
-            const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
+            const signer = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
+            const tp4 = testPlanets.testPlanet4
+            const sig = Buffer.from(tp4.sigHex, 'hex')
+            const cid = tp4.cid
+            const structureCID = tp4.msg.split(':')[1]
+            const pos = tp4.msg.split(':')[2].split(',')
             
-            await xtaxPlanet.addSigner(a);
+            await xtaxPlanet.addSigner(signer);
 
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, pos, sig, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
-            .withArgs(accounts[0].address, "1", "a");
+            .withArgs(accounts[0].address, "1", cid);
 
             await expect(
                 xtaxPlanet.transferFrom(acc1, acc2, 1)
             ).to.emit(xtaxPlanet, 'Transfer')
             .withArgs(acc1, acc2, 1)
             .to.emit(xtaxPlanet, 'TransferredPlanet')
-            .withArgs(acc1, acc2, 1, "a")
+            .withArgs(acc1, acc2, 1, cid)
 
             owner = await xtaxPlanet.ownerOf(1)
             expect(owner).to.equal(acc2)
@@ -188,8 +195,6 @@ const { testPlanets } = require('../../test/data/planet/test_planet_2')
             recentPlanets = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
             expect(recentPlanets[0].owner).to.equal(ethers.constants.AddressZero)
             expect(recentPlanets[0].planetMetadataCID).to.equal('')
-
-
         })
 
         it('mints real planets', async () => {

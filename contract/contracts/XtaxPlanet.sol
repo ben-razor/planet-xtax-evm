@@ -195,6 +195,14 @@ contract XtaxPlanet is ERC721, Ownable {
         return result;
     }
 
+    function abs(int256 number) public pure returns (int256) {
+        if (number >= 0) {
+            return number;
+        } else {
+            return -number;
+        }
+    }
+
     /**
      * @notice Mint a planet with given CIDs at a position
      * @notice Value of mintPrice must be provided
@@ -217,7 +225,6 @@ contract XtaxPlanet is ERC721, Ownable {
         uint256 x = stringToNaturalInt(position[0]);
         uint256 z = stringToNaturalInt(position[2]);
 
-        console.log(x, z);
         if (x == 0 && z == 0) {
             if (msg.value < maxMintPrice) {
                 revert NotEnoughWei(maxMintPrice, msg.value);
@@ -364,7 +371,6 @@ contract XtaxPlanet is ERC721, Ownable {
 
         addToRecentCreations(msg.sender, tokenCounter);
 
-        console.log('msg send', msg.sender, tokenCounter, planetMetadataCID);
         emit MintedPlanet(msg.sender, tokenCounter, planetMetadataCID);
 
         _safeMint(msg.sender, tokenCounter);
