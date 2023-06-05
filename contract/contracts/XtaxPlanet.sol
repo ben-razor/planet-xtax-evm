@@ -177,19 +177,6 @@ contract XtaxPlanet is ERC721, Ownable {
         mintPrice = amount;
     }
 
-    function checkCoordinates(string[] calldata position) external pure returns (bool) {
-        require(position.length == 3, "Invalid position array length");
-
-        int256 x = parseInt(position[0]);
-        int256 z = parseInt(position[2]);
-
-        if (abs(x) < 3 && abs(z) < 3) {
-            return true;
-        }
-
-        return false;
-    }
-
     function parseInt(string memory _value) internal pure returns (int256) {
         bytes memory _bytesValue = bytes(_value);
         int256 _result = 0;
@@ -203,7 +190,7 @@ contract XtaxPlanet is ERC721, Ownable {
 
         for (; i < _bytesValue.length; i++) {
             uint256 _digit = uint256(uint8(_bytesValue[i]) - 48);
-            require(_digit <= 9, "Invalid digit");
+            require(_digit >= 0 && _digit <= 9, "Invalid digit");
 
             _result = _result * 10 + int256(_digit);
         }
