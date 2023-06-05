@@ -4,6 +4,7 @@ const { assert, expect } = require("chai")
 const { network, deployments, ethers } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
 const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_1')
+const { testPlanets } = require('../../test/data/planet/test_planet_2')
 
 !developmentChains.includes(network.name)
 ? describe.skip
@@ -15,6 +16,7 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
         deployer = accounts[0]
         await deployments.fixture(["xtaxplanet"])
         xtaxPlanet = await ethers.getContract("XtaxPlanet")
+        xtaxPlanet.connect(accounts[0])
         mintValue = {value: ethers.utils.parseEther("1")}
     })
 
@@ -35,7 +37,8 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
         })
     })
 
-    const VALID_POSITION= ["0", "42", "0"]
+    const VALID_POSITION = ["0", "42", "0"]
+    const VALID_POSITION_PRICE_LOW = ["10", "42", "10"]
     const VALID_LEVEL = VALID_POSITION[1].toString()
     const INVALID_POSITION= ["0", "1", "0"]
 
@@ -47,7 +50,7 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
             const a = '0x19E507ff3820Aac62eD624cA19Ad1F1c3d83cd2F'
             
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, sInvalid, mintValue)
+                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION_PRICE_LOW, sInvalid, mintValue)
             ).to.be.revertedWith('VerifyFailed()')
 
             await xtaxPlanet.addSigner(a);
@@ -56,10 +59,16 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
                 xtaxPlanet.mintPlanet("a", "b", INVALID_POSITION, sInvalidPos, mintValue)
             ).to.be.revertedWith(`IncorrectLevel("${VALID_LEVEL}", "1")`)
 
+            const tp4 = testPlanets.testPlanet4
+            const sig = Buffer.from(tp4.sigHex, 'hex')
+            const cid = tp4.cid
+            const structureCID = tp4.msg.split(':')[1]
+
+            console.log(accounts[0].address)
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, VALID_POSITION_PRICE_LOW, sig, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
-            .withArgs(accounts[0].address, "1", "a");
+            .withArgs(accounts[0].address, "1", cid);
 
             let owner = await xtaxPlanet.ownerOf(1);
             expect(owner).to.equal(accounts[0].address)
@@ -70,24 +79,24 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
 
             let planetNFT= await xtaxPlanet.planetNFT(1);
             expect(planetNFT.owner).to.equal(accounts[0].address)
-            expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
-            expect(planetNFT.planetMetadataCID).to.equal("a")
-            expect(planetNFT.planetStructureCID).to.equal("b")
+            expect(planetNFT.position).to.equal(VALID_POSITION_PRICE_LOW.join(','))
+            expect(planetNFT.planetMetadataCID).to.equal(cid)
+            expect(planetNFT.planetStructureCID).to.equal(structureCID)
 
             let tokenURI = await xtaxPlanet.tokenURI(1)
-            assert.equal(tokenURI, 'ipfs://' + "a")
+            assert.equal(tokenURI, 'ipfs://' + cid)
             let tokenCounter = await xtaxPlanet.getTokenCounter()
             assert.equal(tokenCounter.toString(), "1")
 
             let recentTokens = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
-            expect(recentTokens[0].planetMetadataCID).to.equal('a')
+            expect(recentTokens[0].planetMetadataCID).to.equal(cid)
             expect(recentTokens).to.have.length(8);
 
             // Minting planet in same location by same user burns old and mints a new one
             await expect(
-                xtaxPlanet.mintPlanet("a", "b", VALID_POSITION, s, mintValue)
+                xtaxPlanet.mintPlanet(cid, structureCID, VALID_POSITION_PRICE_LOW, sig, mintValue)
             ).to.emit(xtaxPlanet, 'MintedPlanet')
-            .withArgs(accounts[0].address, "2", "a");
+            .withArgs(accounts[0].address, "2", cid);
 
             await expect(
                 xtaxPlanet.tokenURI(1)
@@ -98,12 +107,12 @@ const { planets, defaultPlanets } = require('../../test/data/planet/test_planet_
 
             planetNFT= await xtaxPlanet.planetNFT(2);
             expect(planetNFT.owner).to.equal(accounts[0].address)
-            expect(planetNFT.position).to.equal(VALID_POSITION.join(','))
-            expect(planetNFT.planetMetadataCID).to.equal("a")
-            expect(planetNFT.planetStructureCID).to.equal("b")
+            expect(planetNFT.position).to.equal(VALID_POSITION_PRICE_LOW.join(','))
+            expect(planetNFT.planetMetadataCID).to.equal(cid)
+            expect(planetNFT.planetStructureCID).to.equal(structureCID)
             
             recentTokens = await xtaxPlanet.recentPlanetsForAddress(accounts[0].address);
-            expect(recentTokens[0].planetMetadataCID).to.equal('a')
+            expect(recentTokens[0].planetMetadataCID).to.equal(cid)
             expect(recentTokens[1].planetMetadataCID).to.equal('')
 
         })

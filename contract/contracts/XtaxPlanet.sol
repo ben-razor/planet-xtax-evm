@@ -42,7 +42,7 @@ contract XtaxPlanet is ERC721, Ownable {
         string indexed planetMetadataCID
     );
 
-    /// @notice Emit when planet burned 
+    /// @notice Emit when planet burned
     event BurnedPlanet(
         address indexed owner,
         uint256 indexed tokenId,
@@ -62,6 +62,15 @@ contract XtaxPlanet is ERC721, Ownable {
 
     /// @notice Minimum value required to mint a planet
     uint public mintPrice = 1 ether;
+
+    /// @notice Mid-range value for minting a planet
+    uint public midMintPrice = 10 ether;
+
+    /// @notice High value for minting a planet
+    uint public highMintPrice = 100 ether;
+
+    /// @notice Maximum value allowed for minting a planet
+    uint public maxMintPrice = 1000 ether;
 
     /// @notice The standard NFT token counter
     uint256 private tokenCounter;
@@ -106,7 +115,7 @@ contract XtaxPlanet is ERC721, Ownable {
 
     /// @notice Get the URI for a given tokenId
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        if(tokenIdToInfo[tokenId].owner == address(0)) {
+        if (tokenIdToInfo[tokenId].owner == address(0)) {
             revert PlanetNotFound();
         }
 
@@ -118,16 +127,20 @@ contract XtaxPlanet is ERC721, Ownable {
         return tokenIdToInfo[tokenId];
     }
 
-    /// @notice Get the Planet info for a given position 
-    function positionToPlanetNFT(string calldata position) external view returns (PlanetInfo memory) {
+    /// @notice Get the Planet info for a given position
+    function positionToPlanetNFT(
+        string calldata position
+    ) external view returns (PlanetInfo memory) {
         return tokenIdToInfo[positionToTokenId[position]];
     }
 
     /// @notice Get the Planet info for given positions
-    function positionsToPlanetNFTS(string[] calldata positions) external view returns(PlanetInfo[] memory) {
+    function positionsToPlanetNFTS(
+        string[] calldata positions
+    ) external view returns (PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](positions.length);
 
-        for(uint8 i = 0; i < positions.length; i++) {
+        for (uint8 i = 0; i < positions.length; i++) {
             string memory position = positions[i];
             planetInfos[i] = tokenIdToInfo[positionToTokenId[position]];
         }
@@ -136,7 +149,9 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     /// @notice Get the Planet info for metadata CID
-    function planetMetadataCIDToPlanetNFT(string calldata planetMetadataCID) external view returns (PlanetInfo memory) {
+    function planetMetadataCIDToPlanetNFT(
+        string calldata planetMetadataCID
+    ) external view returns (PlanetInfo memory) {
         return tokenIdToInfo[planetMetadataCIDToTokenId[planetMetadataCID]];
     }
 
@@ -148,7 +163,7 @@ contract XtaxPlanet is ERC721, Ownable {
     /// @dev Withdraw value stored in this contract to an address
     /// @dev Only the OWNER of the contract should be able to call this method
     function withdraw(address payable to, uint amount) external onlyOwner {
-        if(amount > 0 && to != address(0)) {
+        if (amount > 0 && to != address(0)) {
             to.transfer(amount);
         }
     }
@@ -160,45 +175,84 @@ contract XtaxPlanet is ERC721, Ownable {
     }
 
     /**
+     * @dev Converts a string representation of a natural number to an integer.
+     * @param str The string to convert.
+     * @return The integer representation of the natural number.
+     */
+    function stringToNaturalInt(string memory str) public pure returns (uint256) {
+        bytes memory strBytes = bytes(str);
+        require(strBytes.length > 0, "Empty string");
+
+        uint256 result = 0;
+
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            uint8 digit = uint8(strBytes[i]);
+            require(digit >= 48 && digit <= 57, "Invalid character");
+
+            result = result * 10 + (digit - 48);
+        }
+
+        return result;
+    }
+
+    /**
      * @notice Mint a planet with given CIDs at a position
-     * @notice Value of mintPrice must be provided 
+     * @notice Value of mintPrice must be provided
      * @notice Planet can only be minted on the valid level (vertical height) for this contract
      * @param position Must be not owned, or owned by the sender
      * @param planetStructureCID Must be not owned, or owned by the sender
      * @param signature The data planetMetadataCID:planetStructureCID:x,y,z must be signed by a signer registered by this contract
      */
     function mintPlanet(
-        string calldata planetMetadataCID, 
-        string calldata planetStructureCID, 
+        string calldata planetMetadataCID,
+        string calldata planetStructureCID,
         string[] calldata position,
         bytes memory signature
     ) external payable {
-
-        if(msg.value < mintPrice) {
-            revert NotEnoughWei(mintPrice, msg.value);
-        }
-
         // If trying to mint on wrong level (vertical height not available on this blockchain)
-        if(keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
+        if (keccak256(abi.encodePacked(position[1])) != keccak256(abi.encodePacked(LEVEL))) {
             revert IncorrectLevel(LEVEL, position[1]);
         }
 
-        string memory positionStr = string(abi.encodePacked(position[0],",",position[1],",",position[2]));
+        uint256 x = stringToNaturalInt(position[0]);
+        uint256 z = stringToNaturalInt(position[2]);
 
-        if(!verify(planetMetadataCID, planetStructureCID, positionStr, signature)) {
+        console.log(x, z);
+        if (x == 0 && z == 0) {
+            if (msg.value < maxMintPrice) {
+                revert NotEnoughWei(maxMintPrice, msg.value);
+            }
+        } else if (x < 3 && z < 3) {
+            if (msg.value < highMintPrice) {
+                revert NotEnoughWei(highMintPrice, msg.value);
+            }
+        } else if (x < 8 && z < 8) {
+            if (msg.value < midMintPrice) {
+                revert NotEnoughWei(midMintPrice, msg.value);
+            }
+        } else {
+            if (msg.value < mintPrice) {
+                revert NotEnoughWei(mintPrice, msg.value);
+            }
+        }
+
+        string memory positionStr = string(
+            abi.encodePacked(position[0], ",", position[1], ",", position[2])
+        );
+
+        if (!verify(planetMetadataCID, planetStructureCID, positionStr, signature)) {
             revert VerifyFailed();
         }
 
         uint256 tokenIdToBurn = 0;
         bool senderOwnsPosition = false;
-        
+
         // If position already has planet
-        if(positionToTokenId[positionStr] != 0) {
+        if (positionToTokenId[positionStr] != 0) {
             // If it is owned by a different Xtaxian
-            if(tokenIdToInfo[positionToTokenId[positionStr]].owner != msg.sender) {
+            if (tokenIdToInfo[positionToTokenId[positionStr]].owner != msg.sender) {
                 revert NotOwnerOfPosition();
-            }
-            else {
+            } else {
                 senderOwnsPosition = true;
             }
         }
@@ -206,17 +260,18 @@ contract XtaxPlanet is ERC721, Ownable {
         bool senderOwnsStructure = false;
 
         // If structure is already owned
-        if(planetStructureCIDToTokenId[planetStructureCID] != 0) {
+        if (planetStructureCIDToTokenId[planetStructureCID] != 0) {
             // If it is owned by a different Xtaxian
-            if(tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]].owner != msg.sender) {
+            if (
+                tokenIdToInfo[planetStructureCIDToTokenId[planetStructureCID]].owner != msg.sender
+            ) {
                 revert NotOwnerOfPlanetStructure();
-            }
-            else {
+            } else {
                 senderOwnsStructure = true;
             }
         }
 
-        if(senderOwnsStructure) {
+        if (senderOwnsStructure) {
             uint256 tokenId = planetStructureCIDToTokenId[planetStructureCID];
             PlanetInfo memory info = tokenIdToInfo[tokenId];
             removePlanetFromPosition(
@@ -225,12 +280,11 @@ contract XtaxPlanet is ERC721, Ownable {
                 info.planetMetadataCID,
                 tokenId
             );
-        }
-        else if(senderOwnsPosition) {
+        } else if (senderOwnsPosition) {
             uint256 tokenId = positionToTokenId[positionStr];
             PlanetInfo memory info = tokenIdToInfo[tokenId];
             removePlanetFromPosition(
-                positionStr, 
+                positionStr,
                 info.planetStructureCID,
                 info.planetMetadataCID,
                 tokenId
@@ -247,24 +301,34 @@ contract XtaxPlanet is ERC721, Ownable {
      */
     function burnPlanet(string calldata planetMetadataCID) external {
         uint256 tokenId = planetMetadataCIDToTokenId[planetMetadataCID];
-        
-        if(tokenId == 0) {
+
+        if (tokenId == 0) {
             revert PlanetNotFound();
         }
 
         PlanetInfo memory info = tokenIdToInfo[tokenId];
 
-        if(info.owner != msg.sender) {
+        if (info.owner != msg.sender) {
             revert NotOwnerOfToken();
         }
 
-        removePlanetFromPosition(info.position, info.planetStructureCID, info.planetMetadataCID, tokenId);
+        removePlanetFromPosition(
+            info.position,
+            info.planetStructureCID,
+            info.planetMetadataCID,
+            tokenId
+        );
     }
 
     /**
      * @dev Internal method used remove a planet from a location if it has been burned or moved
      */
-    function removePlanetFromPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID, uint256 tokenId) internal {
+    function removePlanetFromPosition(
+        string memory position,
+        string memory planetStructureCID,
+        string memory planetMetadataCID,
+        uint256 tokenId
+    ) internal {
         delete tokenIdToInfo[tokenId];
         delete positionToTokenId[position];
         delete planetStructureCIDToTokenId[planetStructureCID];
@@ -280,11 +344,19 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @dev Internal method used add a planet to a position during minting
      */
-    function addPlanetToPosition(string memory position, string memory planetStructureCID, string memory planetMetadataCID) internal {
-
+    function addPlanetToPosition(
+        string memory position,
+        string memory planetStructureCID,
+        string memory planetMetadataCID
+    ) internal {
         tokenCounter = tokenCounter + 1;
 
-        tokenIdToInfo[tokenCounter] = PlanetInfo(msg.sender, position, planetStructureCID, planetMetadataCID);
+        tokenIdToInfo[tokenCounter] = PlanetInfo(
+            msg.sender,
+            position,
+            planetStructureCID,
+            planetMetadataCID
+        );
 
         positionToTokenId[position] = tokenCounter;
         planetStructureCIDToTokenId[planetStructureCID] = tokenCounter;
@@ -292,6 +364,7 @@ contract XtaxPlanet is ERC721, Ownable {
 
         addToRecentCreations(msg.sender, tokenCounter);
 
+        console.log('msg send', msg.sender, tokenCounter, planetMetadataCID);
         emit MintedPlanet(msg.sender, tokenCounter, planetMetadataCID);
 
         _safeMint(msg.sender, tokenCounter);
@@ -316,7 +389,12 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @notice Override of NFT safeTransferFrom with data method
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override {
         _transferPlanet(from, to, tokenId);
         super.safeTransferFrom(from, to, tokenId, data);
     }
@@ -338,8 +416,12 @@ contract XtaxPlanet is ERC721, Ownable {
      * @notice Internal method add tokenId to short list of recently added planets
      */
     function addToRecentCreations(address creator, uint256 tokenId) internal {
-        if(ownerToRecentCreations[creator].numElems == 0) {
-            ownerToRecentCreations[creator] = CircularBuffer.Buf(0, NUM_RECENT_CREATIONS, new uint256[](NUM_RECENT_CREATIONS));
+        if (ownerToRecentCreations[creator].numElems == 0) {
+            ownerToRecentCreations[creator] = CircularBuffer.Buf(
+                0,
+                NUM_RECENT_CREATIONS,
+                new uint256[](NUM_RECENT_CREATIONS)
+            );
         }
 
         CircularBuffer.insert(ownerToRecentCreations[creator], tokenId);
@@ -349,9 +431,9 @@ contract XtaxPlanet is ERC721, Ownable {
      * @notice Internal method remove tokenId to short list of recently added planets
      */
     function removeFromRecentCreations(address creator, uint256 tokenId) internal {
-        if(ownerToRecentCreations[creator].numElems !=  0) {
-            for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
-                if(CircularBuffer.read(ownerToRecentCreations[creator], int8(i)) == tokenId) {
+        if (ownerToRecentCreations[creator].numElems != 0) {
+            for (uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+                if (CircularBuffer.read(ownerToRecentCreations[creator], int8(i)) == tokenId) {
                     CircularBuffer.erase(ownerToRecentCreations[creator], int8(i));
                     break;
                 }
@@ -362,11 +444,11 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @notice Get a short list of recently added planet infos for this account
      */
-    function recentPlanetsForAddress(address addr) external view returns(PlanetInfo[] memory) {
+    function recentPlanetsForAddress(address addr) external view returns (PlanetInfo[] memory) {
         PlanetInfo[] memory planetInfos = new PlanetInfo[](NUM_RECENT_CREATIONS);
 
-        if(ownerToRecentCreations[addr].numElems !=  0) {
-            for(uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
+        if (ownerToRecentCreations[addr].numElems != 0) {
+            for (uint8 i = 0; i < NUM_RECENT_CREATIONS; i++) {
                 uint256 tokenId = CircularBuffer.read(ownerToRecentCreations[addr], int8(i));
                 planetInfos[i] = tokenIdToInfo[tokenId];
             }
@@ -388,13 +470,14 @@ contract XtaxPlanet is ERC721, Ownable {
      * @return false if signature is not valid for data, or if recovered address is not a registered signer
      */
     function verify(
-        string calldata planetMetadataCID, 
-        string calldata planetStructureCID, 
+        string calldata planetMetadataCID,
+        string calldata planetStructureCID,
         string memory position,
         bytes memory signature
-    ) public view returns(bool) {
-
-        bytes32 msgHash = keccak256(abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position));
+    ) public view returns (bool) {
+        bytes32 msgHash = keccak256(
+            abi.encodePacked(planetMetadataCID, ":", planetStructureCID, ":", position)
+        );
         bytes32 msgFull = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgHash));
         address signer = this.recover(msgFull, signature);
 
@@ -406,8 +489,7 @@ contract XtaxPlanet is ERC721, Ownable {
     /**
      * @dev ECDSA recover helper method
      */
-    function recover(bytes32 hash, bytes memory signature) external pure returns(address) {
+    function recover(bytes32 hash, bytes memory signature) external pure returns (address) {
         return ECDSA.recover(hash, signature);
     }
 }
-
