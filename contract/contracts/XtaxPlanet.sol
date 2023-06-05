@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./CircularBuffer.sol";
 
 import "hardhat/console.sol";
@@ -33,6 +34,8 @@ error NotEnoughWei(uint expected, uint actual);
 /// @title NFT for a Planet in the Planet Xtax universe
 /// @author Ben Razor
 contract XtaxPlanet is ERC721, Ownable {
+    using SafeMath for uint256;
+    using SafeMath for int256;
     using Strings for string;
 
     /// @notice Emit when planet minted
@@ -174,33 +177,49 @@ contract XtaxPlanet is ERC721, Ownable {
         mintPrice = amount;
     }
 
-    /**
-     * @dev Converts a string representation of a natural number to an integer.
-     * @param str The string to convert.
-     * @return The integer representation of the natural number.
-     */
-    function stringToNaturalInt(string memory str) public pure returns (uint256) {
-        bytes memory strBytes = bytes(str);
-        require(strBytes.length > 0, "Empty string");
+    function checkCoordinates(string[] calldata position) external pure returns (bool) {
+        require(position.length == 3, "Invalid position array length");
 
-        uint256 result = 0;
+        int256 x = parseInt(position[0]);
+        int256 z = parseInt(position[2]);
 
-        for (uint256 i = 0; i < strBytes.length; i++) {
-            uint8 digit = uint8(strBytes[i]);
-            require(digit >= 48 && digit <= 57, "Invalid character");
-
-            result = result * 10 + (digit - 48);
+        if (abs(x) < 3 && abs(z) < 3) {
+            return true;
         }
 
-        return result;
+        return false;
     }
 
-    function abs(int256 number) public pure returns (int256) {
-        if (number >= 0) {
-            return number;
-        } else {
-            return -number;
+    function parseInt(string memory _value) internal pure returns (int256) {
+        bytes memory _bytesValue = bytes(_value);
+        int256 _result = 0;
+        bool _isNegative = false;
+        uint256 i = 0;
+
+        if (_bytesValue.length > 0 && _bytesValue[0] == bytes1('-')) {
+            _isNegative = true;
+            i++;
         }
+
+        for (; i < _bytesValue.length; i++) {
+            uint256 _digit = uint256(uint8(_bytesValue[i]) - 48);
+            require(_digit <= 9, "Invalid digit");
+
+            _result = _result * 10 + int256(_digit);
+        }
+
+        if (_isNegative) {
+            return -_result;
+        }
+
+        return _result;
+    } 
+
+    function abs(int256 x) internal pure returns (int256) {
+        if (x < 0) {
+            return -x;
+        }
+        return x;
     }
 
     /**
@@ -222,8 +241,8 @@ contract XtaxPlanet is ERC721, Ownable {
             revert IncorrectLevel(LEVEL, position[1]);
         }
 
-        uint256 x = stringToNaturalInt(position[0]);
-        uint256 z = stringToNaturalInt(position[2]);
+        int256 x = abs(parseInt(position[0]));
+        int256 z = abs(parseInt(position[2]));
 
         if (x == 0 && z == 0) {
             if (msg.value < maxMintPrice) {
